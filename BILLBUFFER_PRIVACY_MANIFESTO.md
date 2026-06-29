@@ -31,11 +31,11 @@ It needs to be safe from the internet."
 
 **MANDATORY:**
 1. FULL offline functionality
-2. NO required account creation
-3. NO analytics unless explicitly opted-in
+2. NO accounts — ever
+3. NO analytics or tracking — none, not even opt-in
 4. NO third-party libraries that phone home
 5. NO background network requests
-6. VISIBLE when app uses network (if ever)
+6. NO user data leaves the device
 
 ### Trust Indicators (Visible in App)
 - "✈️ Offline Mode" indicator
@@ -118,9 +118,11 @@ Shows:
 - Dollar amounts
 - Bill names
 - Personal details
+- How many bills you have, or which features you use
+- Anything at all — there are no network requests to see it through
 
-**WE MIGHT SEE (Anonymous):**
-- Number of bills added
-- Frequency types used
-- Feature usage patterns
-- Crash reports (opt-in only)
+> **Reconciled (2026-06-29):** an earlier draft listed "anonymous" usage we
+> "might see" (bill counts, frequency types, feature usage, opt-in crash reports).
+> That contradicted the "Network requests: ZERO" promise and the no-analytics
+> guardrail, so it was removed. The locked architecture has **no analytics of any
+> kind**, opt-in or otherwise. See `ARCHITECTURE_GUARDRAILS.md`.

@@ -1,5 +1,20 @@
 # BillBuffer MVP v1.0
 
+> **Reconciled to the locked architecture (2026-06-29).** This doc predates the
+> frozen prototype and the production specs. Where it conflicts, the authoritative
+> docs win:
+> - **Calculation:** the "monthly-equivalent / averaging" pseudo-code below is
+>   **superseded** by `CALCULATION_ENGINE_SPEC.md` — the engine is a binary-searched
+>   smallest fixed transfer over a 36-month simulation, **not** an average.
+> - **Pay frequencies:** weekly / biweekly / monthly only. **Twice-monthly is
+>   removed** (a single "next payday" input can't anchor two fixed dates).
+> - **Bill frequencies:** monthly / quarterly / annual only. **Semi-annual is
+>   removed.**
+> - **Bill timing:** a full **next due date**, not a day-of-month.
+> - **Export/import:** now **in the MVP** (a core trust feature), not excluded.
+> - **Stack:** static PWA + IndexedDB, no backend/auth/analytics/bank — see
+>   `ARCHITECTURE_GUARDRAILS.md` and `BILLBUFFER_TECHNICAL_STACK.md`.
+
 ## The ONE Feature
 Calculate per-paycheck bill allocation
 
@@ -13,16 +28,17 @@ Calculate per-paycheck bill allocation
 
 ### 1. Add Paycheck (One-Time Setup)
 - Amount: $____
-- Frequency: [Weekly|Bi-weekly|Twice-monthly|Monthly]
+- Frequency: [Weekly|Bi-weekly|Monthly]   <!-- twice-monthly removed -->
 - Next payday: [Date picker]
+- Bills-account balance today + cushion (floor, default $0)
 - DONE - Show split immediately
 
 ### 2. Add Bills (Core Repeatable Action)
 - Name: [Text - no financial jargon]
 - Amount: $____
-- Due date: [Day of month]
-- Frequency: [Monthly|Quarterly|Semi-Annual|Annual]
-- Credit card minimum: [Optional checkbox]
+- Next due date: [Date picker]   <!-- full date, not day-of-month -->
+- Frequency: [Monthly|Quarterly|Annual]   <!-- semi-annual removed -->
+- Credit card / revolving debt: [Optional checkbox]
 - DONE - Update split in real-time
 
 ### 3. The Split View (The "Aha!" Screen)
@@ -39,12 +55,18 @@ Calculate per-paycheck bill allocation
 
 ## Core Calculation Logic
 
+> **Superseded by `CALCULATION_ENGINE_SPEC.md`.** The averaging pseudo-code below
+> is kept only to show the original intent. The production engine does **not**
+> average; it binary-searches the **smallest fixed per-paycheck transfer** that
+> keeps the bills account at/above the cushion across a 36-month day-by-day
+> simulation, plus a one-time starting catch-up when bills land before enough
+> paychecks. Directional rounding: bills round up, "yours" rounds down.
+
 ```javascript
-// Pseudo-code for the magic
+// ORIGINAL INTENT ONLY — NOT the production algorithm. See CALCULATION_ENGINE_SPEC.md.
 monthlyEquivalent =
   monthlyBills +
   (quarterlyBills / 3) +
-  (semiAnnualBills / 6) +
   (annualBills / 12) +
   creditCardMinimums
 
@@ -68,7 +90,9 @@ livingMoney = paycheckAmount - perPaycheckAmount
 ❌ Cloud sync (v1)
 ❌ User accounts/login
 ❌ Detailed bill management
-❌ Export (can add quickly if needed)
+
+<!-- Export/import moved INTO the MVP — it is the user's portability + a core trust
+     proof for the Trust-Nothing persona. See PRODUCTION_IMPLEMENTATION_BRIEF.md. -->
 
 ## Success Criteria
 - 5 out of 10 pilot users say "This reduces my anxiety"

@@ -1,83 +1,67 @@
-# BillBuffer Technical Stack
+# BillBuffer — Technical Stack
 
-## Current Technical Decisions
+**Status:** Locked for MVP. **Updated:** 2026-06-29
 
-### Stack
-**Frontend: PWA (Progressive Web App)**
-- Single codebase for all platforms
-- Installable like native app
-- Works offline by design
-- No app store requirements
+This replaces the earlier stack doc, which specified a backend (Render / Node /
+Neon Postgres), accounts/auth, and analytics — all of which contradicted the
+product's own privacy philosophy. The MVP stack below is unambiguous and matches
+`ARCHITECTURE_GUARDRAILS.md`. Backend, cloud, auth, and analytics ideas are not
+deleted — they are fenced into "Explicitly not MVP" at the bottom, each with its
+privacy trade-off named, so nobody mistakes them for current architecture.
 
-**Backend: Node.js/Express on Render**
-- Minimal backend for future features
-- Handles optional cloud backup
-- No user data stored on servers
+---
 
-**Database:**
-- Local: IndexedDB (primary)
-- Server: Neon Postgres (for optional features only)
+## MVP stack
 
-**Encryption: AES-256**
-- Full database encryption (not field-level)
-- Encryption happens on device
-- Keys never leave device
+| Layer | Choice | Notes |
+|---|---|---|
+| **Framework** | **SvelteKit + TypeScript** | App framework; typed throughout. |
+| **Build target** | **Static site** | `@sveltejs/adapter-static`, prerendered, SPA fallback. No SSR, no server runtime. |
+| **Runtime** | **Static PWA** | Installable, offline-first Progressive Web App. |
+| **Storage** | **IndexedDB** | All user data on-device only. (Prototype used `localStorage`; production uses IndexedDB.) |
+| **Calculation** | Pure client-side TypeScript | The fixed-transfer forecast engine; see `CALCULATION_ENGINE_SPEC.md`. |
+| **Export/Import** | Local JSON file | User-initiated; validated on import. The only data portability path. |
+| **Hosting** | Static host / CDN | Serves static assets only; stores no user data and logs nothing personal. |
+| **Backend** | **None** | No API we operate. |
+| **Database (server)** | **None** | No server database. |
+| **Auth** | **None** | No login, accounts, magic links, OAuth, or SSO. |
+| **Analytics** | **None** | No tracking, telemetry, or "anonymous" usage counts. |
+| **Bank connections** | **None** | No Plaid/aggregators/transaction import. |
 
-**Auth:**
-- None required for MVP
-- Future: Optional email/magic link for backup
+### Why this stack
 
-## Performance Requirements
-- First paint: <1 second
-- Interactive: <2 seconds
-- Calculation: Instant (<100ms)
-- Works on 3G connection
-- Works on 3-year-old phones
-- Handles 10 or 100 bills equally well
+- **SvelteKit + adapter-static** ships a small, fast app as plain static files — no
+  server to operate means no server that can hold or leak user data.
+- **IndexedDB** is the right on-device store for structured records (bills,
+  paycheck, schema version) and scales past `localStorage`'s limits.
+- **PWA + service worker** delivers install + true offline (airplane-mode) behavior
+  without any backend.
+- **Local JSON export/import** gives the user portability and a trust proof without
+  cloud sync.
 
-## Privacy Requirements
-- FULL offline functionality
-- NO required account creation
-- NO analytics unless explicitly opted-in
-- NO third-party libraries that phone home
-- NO background network requests
-- VISIBLE when app uses network (if ever)
+### Server-side user data
 
-## Development Constraints
-- Solo developer
-- Zero budget
-- Must be maintainable by "lazy genius"
-- Prefer boring, stable technology
-- No complex build processes
-- Iterate quickly based on user feedback
+**None.** No user financial data is transmitted, stored, or processed off-device.
+The static host and CDN see only requests for static assets, never user data.
 
-## Infrastructure (Already Set Up)
-- Google Workspace (abandoned Firebase due to phishing flags)
-- Render (hosting)
-- Docker (containerization)
-- Neon (Postgres database)
-- Domain: billbuffer.com (presumably)
+---
 
-## Future Considerations
-- Optional Google Drive backup ("BYO Cloud")
-- PWA → Native app (only if needed)
-- SendGrid or similar for magic links (if auth added)
-- Plausible Analytics (privacy-focused, if user opts in)
+## Explicitly NOT MVP — future only if the privacy philosophy changes
 
-## Development Principles
+Everything here is **out of scope** and would require a deliberate, written
+founder-level decision because each one weakens "we don't know you exist." Listed
+so the ideas aren't lost — **not** as a roadmap.
 
-### "Boring is Beautiful"
-- No animations to break
-- No trends to maintain
-- No social features to moderate
-- Just math that works
+| Idea | What it would add | Privacy trade-off it introduces |
+|---|---|---|
+| Backend API (e.g. Node/Express on Render) | A server we operate | Creates an off-device place user data can live or pass through |
+| Server database (e.g. Neon Postgres) | Central storage | User financial data leaves the device |
+| Accounts + auth (email / magic link / OAuth / SSO) | Identity, multi-device | We would now "know you exist"; requires storing identifiers |
+| Multi-device sync / cloud backup | Cross-device data | Data must transit and rest off-device |
+| Analytics (e.g. Plausible) / crash telemetry | Usage insight | Network requests leave the device; breaks "zero network" promise |
+| Bank connections (e.g. Plaid) | Auto-imported transactions | Connects to financial institutions; large new data-exposure surface |
+| Email/notifications (e.g. SendGrid) | Reminders | Requires contact info + a server to send from |
+| Server-side or account-bound encryption | "Encryption at rest" claims | With no account there is no server-held key; any such claim must be honest about the on-device key model before it ships |
 
-### Build for Maintenance
-- If the founder won't maintain it, neither will users
-- Every feature = future maintenance debt
-- Choose carefully
-
-### Simplicity Over Features
-- Better to do one thing perfectly
-- Than many things adequately
-- The ONE thing: Calculate bill/living split
+If any of these is ever reconsidered, update `ARCHITECTURE_GUARDRAILS.md` first —
+the guardrails are the gate, this table is just the parking lot.
