@@ -46,16 +46,18 @@ ships for it.
 | C3 | **Paycheck amount must be > 0** | amount = 0 or negative or non-finite | rejected |
 | C4 | **Bill amount must be > 0** | bill amount = 0 / negative / NaN | rejected |
 | C5 | **Bill name required** | blank name | rejected |
-| C6 | **Negative balance / APR rejected** | balance = −1 or apr = −1 | rejected |
+| C6 | **Negative revolving-debt balance / APR rejected** | a bill's `balance` = −1 or `apr` = −1 (the amount *owed* on a card) | rejected |
+| C7 | **Negative bills-account balance ACCEPTED** | `billsAccountBalanceToday` = −100 (overdrawn account) | **accepted** and saved; must only be finite — a negative value is **not** rejected. Catch-up/forecast account for the overdraft. (Cushion stays ≥ 0.) |
 
 ## D. Plan states
 
 | # | Test | Setup | Expected |
 |---|------|-------|----------|
-| D1 | **Impossible plan** | bills whose required transfer exceeds one paycheck | `impossible = true`; Yours shows **$0** (never negative); "Bills need $X", "Short by $Y each paycheck"; forecast card + "why" hidden |
+| D1 | **Impossible plan (genuine income shortfall)** | bills whose **long-run average outflow per paycheck exceeds the paycheck** (`totalOutflow / paychecks > paycheck`) | `impossible = true`; Yours shows **$0** (never negative); "Bills need $X" (X = avg), "Short by $Y each paycheck"; forecast card + "why" hidden |
 | D2 | **Same-day ordering: bill before paycheck** | a bill and a payday on the same date, balance tight | bill applied first; if that breaches the cushion, it is reflected (a same-day paycheck does not "rescue" a same-day bill) |
-| D3 | **Starting catch-up required** | a bill due before payday #1 with start $0 | non-zero `startCatchUp` (rounded up); labels switch to "…after setup"; cause-aware explanation |
+| D3 | **Starting catch-up — bill before payday #1** | a bill due before payday #1 with start $0 | non-zero `startCatchUp` (rounded up); labels switch to "…after setup"; cause-aware explanation |
 | D4 | **Existing balance covers pre-payday need** | start balance ≥ pre-first-payday outflow | no catch-up; leftover balance slightly lowers `X`; adaptive "why" copy |
+| D5 | **Early underfunding AFTER payday #1 is a timing case, not impossible** | $100 weekly, start $0, cushion $0, one $1,000 annual bill first due after **two** paychecks have landed | **NOT** `impossible` (avg ≈ $19.23/pay ≤ $100). Engine classifies it as early underfunding: recommends a feasible recurring transfer (**$19.24 → shown $20**) and reports a one-time **startup catch-up $961.52 → shown $962** that brings the lowest point to the cushion. The naïve "infinite-transfer" catch-up ($0) + binary-searched transfer ($500 > paycheck) → false "impossible" is the **bug guarded against**. |
 
 ## E. Revolving debt
 
@@ -80,6 +82,7 @@ ships for it.
 | F6 | **Negative cushion in file** | cushion < 0 | rejected |
 | F7 | **Stop-when-paid + blank balance in file** | as E6 but via import | rejected with the same message |
 | F8 | **Normalization on success** | valid file with untrimmed names, missing apr/cushion, card with non-monthly freq | names trimmed, defaults applied, card coerced monthly, ids assigned |
+| F9 | **Negative bills-account balance in file ACCEPTED** | file with `billsAccountBalanceToday` (legacy `setAside`) = −100 | **accepted** (finite) — must **not** be rejected, unlike negative cushion (F6). Live input allows it, so import must too. |
 
 ## G. Privacy / offline (integration)
 

@@ -24,10 +24,13 @@ Outputs:
 
 - `X` — exact smallest steady transfer (currency, internally to the cent).
 - `yours` = `paycheck − X`.
-- `startCatchUp` — one-time amount that must already be in the account before the
-  first paycheck (a gap no transfer can close).
+- `startCatchUp` — one-time amount that must be put into the account up front to
+  bridge **early** underfunding under the chosen transfer (before *or* after the
+  first payday); see §6.
 - `minBal`, `minDate` — lowest projected balance under the plan and when it occurs.
-- `impossible` — true when the required transfer exceeds one paycheck.
+- `impossible` — true only when the long-run **average** outflow per paycheck
+  exceeds the paycheck (genuine income shortfall), **not** merely when the steady
+  transfer starts out above one paycheck; see §6 and §11.
 
 All money math is done in a way that avoids float drift (integer cents in the
 search). Display rounding is directional — see §9.
@@ -92,27 +95,84 @@ inflow second**.
 
 ## 6. Starting catch-up
 
-Some bills can fall **before enough paychecks have landed** (e.g. a card due before
-payday #1, or rent due two days after onboarding). That gap cannot be closed by any
-steady transfer, so it is reported as a one-time **"get this into the account now"**
-amount.
+A one-time **"get this into the account now"** amount, needed whenever the bills
+account would otherwise dip below the cushion **early** in the forecast — before
+recurring transfers have had time to accumulate. A catch-up can be caused by:
 
-Computation:
+- bills due **before the first payday**,
+- **early bills after the first payday**, but before enough deposits have landed,
+- **starting below the cushion** (including an overdrawn balance), or
+- **any combination** of these.
 
-1. Simulate the timeline with an effectively infinite transfer; record the deepest
-   (lowest) balance reached, `deepest`.
-2. `startCatchUp = max(0, cushion − deepest)`, rounded **up** to the cent.
-3. `effectiveStart = setAside + startCatchUp`.
-4. The steady transfer `X` is then searched from `effectiveStart` (§7).
+> The bills-account balance is `billsAccountBalanceToday` (the prototype field name
+> was `setAside`). It is the **actual** current balance and **may be negative** if
+> the account is overdrawn; it must only be finite. See §7 and §12.
 
-`preNeed = max(0, setAside − deepest)` is the amount of pre-first-payday need the
-existing balance already covers; it drives the adaptive "Why this amount?" copy
-(when the account already has enough, no catch-up is shown and the leftover balance
-slightly lowers `X`).
+### Catch-up as a function of the recurring transfer
+
+For a chosen recurring transfer `X`, the required catch-up is whatever one-time
+top-up makes the **lowest point of the actual plan** reach the cushion:
+
+```
+requiredCatchUpForTransfer(X):
+  low = simulate(X, billsAccountBalanceToday).minBal   # full 36-month timeline
+  return max(0, cushion - low)                          # rounded UP to the cent
+```
+
+This **replaces** the earlier shortcut of simulating with an effectively infinite
+transfer. That shortcut only measured the dip *before the first payday*
+(`requiredCatchUpForTransfer(∞)`), because an infinite transfer makes every balance
+after payday #1 huge — so it **missed early bills that land after the first payday**
+and pushed their entire cost into the recurring transfer, sometimes spuriously
+exceeding the paycheck. The catch-up must bridge the lowest point of the *real*
+plan, wherever it falls.
+
+### Plan selection policy
+
+1. **Minimum-catch-up plan (normal case).** Let `catchUp₀ =
+   requiredCatchUpForTransfer(∞)` (the pre-first-payday shortfall). Search the
+   smallest steady transfer `X₀` such that, starting from
+   `billsAccountBalanceToday + catchUp₀`, the simulation stays at or above the
+   cushion (§7). If `X₀ <= paycheck`, **use `(X₀, catchUp₀)`** — the common path,
+   which minimizes the upfront amount.
+2. **Affordability check.** If `X₀ > paycheck`, do **not** immediately mark the plan
+   impossible. Compute the long-run average outflow per paycheck:
+   `avg = totalOutflow / paychecksInHorizon`.
+   - If `avg > paycheck` → genuinely **impossible** (§11): over the full horizon,
+     bills cost more than income.
+   - If `avg <= paycheck` → a **timing / catch-up problem**, not an income problem:
+     bills are front-loaded, but income covers them over time.
+3. **Timing resolution.** Recommend a feasible recurring transfer
+   `Xᵣ = min(paycheck, ceil(avg to the cent))` — the smallest long-run-sustainable
+   transfer, so the user keeps the most each paycheck — and report the startup
+   catch-up `requiredCatchUpForTransfer(Xᵣ)` that bridges the early gap.
+
+Let `deepest∞ = simulate(∞).minBal` (the lowest balance under an infinite transfer,
+i.e. the pre-first-payday floor). Then `preNeed = max(0, billsAccountBalanceToday −
+deepest∞)` is the share of the pre-first-payday need the existing balance already
+covers; it drives the adaptive "Why this amount?" copy (when the account already
+holds enough, no catch-up is shown and the leftover balance slightly lowers `X`).
 
 When a catch-up is required, the two hero labels read **"…each paycheck after
-setup."** The catch-up explanation is **cause-aware**: bills-due-before-payday only,
-below-cushion only, or both.
+setup."** The explanation is **cause-aware**: bills-before-first-payday,
+early-bills-after-first-payday, below-cushion, or a combination.
+
+### Example — early underfunding is a timing problem, not "impossible"
+
+- Paycheck: **$100 weekly**; starting balance `$0`; cushion `$0`.
+- One bill: **$1,000 annual**, first due after **two** paychecks have landed.
+
+Over 36 months there are 156 paychecks and the bill recurs 3× (total `$3,000`), so
+`avg = 3000 / 156 ≈ $19.23` per paycheck — far below the $100 paycheck. But the
+first $1,000 lands after only two deposits (~$40 accrued):
+
+- The **old** infinite-transfer shortcut computes `startCatchUp = $0` and
+  binary-searches a steady transfer of **$500** (> $100) → it would wrongly mark the
+  plan **impossible**.
+- The **corrected** logic sees `avg ≤ paycheck`, classifies this as **early
+  underfunding**, recommends a recurring transfer of **$19.24 (shown as $20)**, and
+  reports a **one-time startup catch-up of $961.52 (shown as $962)** that brings the
+  lowest point exactly to the cushion. **Feasible, not impossible.**
 
 ---
 
@@ -189,11 +249,27 @@ internal recurrence math.
 
 ## 11. Impossible-plan state
 
-If `paycheck > 0` and the required transfer `X > paycheck`, the plan cannot
-balance. The engine reports `impossible = true`. The UI must then:
+A plan is impossible **only when income genuinely cannot cover the bills over the
+full horizon** — i.e. when the long-run average outflow per paycheck exceeds the
+paycheck:
+
+```
+avg = totalOutflow / paychecksInHorizon
+impossible = paycheck > 0 && avg > paycheck
+```
+
+A steady transfer that merely *starts out* larger than one paycheck is **not**
+sufficient to declare impossibility. When the minimum-catch-up transfer `X₀ >
+paycheck` but `avg <= paycheck`, the plan is a **front-loading / timing problem**
+resolved by a startup catch-up (§6), not an income shortfall — the engine must take
+the timing-resolution path, not the impossible path.
+
+When the plan truly is impossible, the engine reports `impossible = true` and the UI
+must:
 
 - Show **Yours = $0** (never a negative number).
-- Show **"Bills need $X"** and **"Short by $(X − paycheck)" each paycheck**.
+- Show **"Bills need $X"** and **"Short by $(X − paycheck)" each paycheck**, where
+  here `X = avg` (the long-run sustainable transfer the plan would require).
 - Explain that, over 3 years, bills cost more than income — so a bill must drop or
   shrink, or income must rise.
 
@@ -208,8 +284,10 @@ leave current data untouched. Reject when:
 - The file is not an object, or has no `bills` array.
 - `testToday` (if present) is not a strictly valid date.
 - Paycheck (if present): `amount` not finite or `<= 0`; `freq` not one of
-  weekly/biweekly/monthly; `next` not a strictly valid date; `setAside` not finite;
-  `cushion` not finite or `< 0`.
+  weekly/biweekly/monthly; `next` not a strictly valid date;
+  `billsAccountBalanceToday` (prototype field: `setAside`) **not finite** — note it
+  **may be negative** (an overdrawn account) and a negative value must **not** be
+  rejected; `cushion` not finite or `< 0`.
 - Any bill: missing/empty name; `amount` not finite or `<= 0`; `dueDate` not a
   strictly valid date; `freq` not one of monthly/quarterly/annual; `balance` not
   finite or `< 0`; `apr` not finite or `< 0`.
@@ -218,8 +296,9 @@ leave current data untouched. Reject when:
   off"). Balance `0` or `> 0` is accepted; blank balance is allowed only when the
   toggle is off.
 
-On success, normalize: trim names, default missing `setAside`/`cushion`/`apr` to 0,
-coerce `showPayoff` bills to monthly frequency, and assign ids where missing.
+On success, normalize: trim names, default missing
+`billsAccountBalanceToday`/`cushion`/`apr` to 0, coerce `showPayoff` bills to
+monthly frequency, and assign ids where missing.
 
 ---
 

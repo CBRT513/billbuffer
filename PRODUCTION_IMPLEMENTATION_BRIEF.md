@@ -42,7 +42,8 @@ Mirror the validated prototype flow (six screens):
 1. **Welcome / privacy promise** — three calm cards ("not a budget app", "we don't
    know you exist", "add all your bills"). Skippable.
 2. **Paycheck setup** — amount, frequency (weekly / every 2 weeks / monthly), next
-   payday, bills-account balance today, cushion (floor, default $0). Editable later.
+   payday, bills-account balance today (may be negative if overdrawn), cushion
+   (floor, ≥ 0, default $0). Editable later.
 3. **Split (home)** — hero *Yours each paycheck* and *Put into bills each paycheck*,
    a two-color proportion bar (For bills / Yours), a forecast card (lowest projected
    balance + date, and starting catch-up when required), and a collapsible
@@ -74,8 +75,11 @@ interface Paycheck {
   amount: number;        // > 0, finite
   freq: Frequency;
   next: string;          // "YYYY-MM-DD", strictly valid
-  setAside: number;      // bills-account balance today, >= 0, finite
-  cushion: number;       // floor, >= 0, finite (default 0)
+  // Actual current balance of the account bills are paid from.
+  // MAY BE NEGATIVE (overdrawn). Must be finite. NOT required to be >= 0.
+  // (Prototype field name was `setAside` — legacy.)
+  billsAccountBalanceToday: number;
+  cushion: number;       // floor, MUST be >= 0, finite (default 0)
 }
 
 interface Bill {
