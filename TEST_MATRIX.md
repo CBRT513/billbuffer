@@ -48,6 +48,7 @@ ships for it.
 | C5 | **Bill name required** | blank name | rejected |
 | C6 | **Negative revolving-debt balance / APR rejected** | a bill's `balance` = −1 or `apr` = −1 (the amount *owed* on a card) | rejected |
 | C7 | **Negative bills-account balance ACCEPTED** | `billsAccountBalanceToday` = −100 (overdrawn account) | **accepted** and saved; must only be finite — a negative value is **not** rejected. Catch-up/forecast account for the overdraft. (Cushion stays ≥ 0.) |
+| C8 | **Valid next payday but NO paydays in horizon → rejected (live input)** | strictly valid `next` more than 36 months out (e.g. today 2030-01-01, `next` = 2033-06-01), any freq | **rejected** before any simulation/`avg` — the schedule yields 0 paydays in `[today, horizonEnd]`. Message: "Your next payday is too far in the future — pick a date within the next 3 years." No division-by-zero. |
 
 ## D. Plan states
 
@@ -58,6 +59,7 @@ ships for it.
 | D3 | **Starting catch-up — bill before payday #1** | a bill due before payday #1 with start $0 | non-zero `startCatchUp` (rounded up); labels switch to "…after setup"; cause-aware explanation |
 | D4 | **Existing balance covers pre-payday need** | start balance ≥ pre-first-payday outflow | no catch-up; leftover balance slightly lowers `X`; adaptive "why" copy |
 | D5 | **Early underfunding AFTER payday #1 is a timing case, not impossible** | $100 weekly, start $0, cushion $0, one $1,000 annual bill first due after **two** paychecks have landed | **NOT** `impossible` (avg ≈ $19.23/pay ≤ $100). Engine classifies it as early underfunding: recommends a feasible recurring transfer (**$19.24 → shown $20**) and reports a one-time **startup catch-up $961.52 → shown $962** that brings the lowest point to the cushion. The naïve "infinite-transfer" catch-up ($0) + binary-searched transfer ($500 > paycheck) → false "impossible" is the **bug guarded against**. |
+| D6 | **Partial pre-first-payday coverage** | cushion $0, `billsAccountBalanceToday` = $100, one $250 bill due **before** payday #1 | `preFirstPaydayOutflow` = $250; `availableAboveCushion` = $100; `coveredByCurrentBalance` = **$100** (partial); `preFirstPaydayShortfall` = **$150**. Startup catch-up reflects the **$150** shortfall (not $0, not the full $250); "why" copy says the balance covers part of the bills due before your next payday. |
 
 ## E. Revolving debt
 
@@ -86,6 +88,7 @@ ships for it.
 | F10 | **Normal bill with NO balance/apr ACCEPTED** | ordinary bill (`showPayoff` false) with `balance`/`apr` fields absent | **accepted**; `balance`/`apr` normalized to 0. Not rejected by the finite check. |
 | F11 | **Normal bill with BLANK balance/apr ACCEPTED** | ordinary bill with `balance: ""` / `apr: ""` (or null) | **accepted**; blanks normalized to 0 before validation. |
 | F12 | **Revolving debt, stop-when-paid, balance 0 ACCEPTED** | `showPayoff` + `stopWhenPaid` true with `balance` = 0 | **accepted** (means already paid off → generates zero future payments). Contrast F7 (blank balance → rejected). |
+| F13 | **Valid next payday but NO paydays in horizon → rejected (import)** | file whose `next` is strictly valid but more than 36 months out (0 paydays in horizon) | **rejected** with the same message as live input (C8), before any simulation/`avg`; current data untouched. |
 
 ## G. Privacy / offline (integration)
 

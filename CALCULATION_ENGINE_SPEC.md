@@ -80,6 +80,15 @@ Paydays are **anchored to the next payday** and generated with **no date drift**
 Generation starts at the first occurrence **on or after today** and continues
 through `horizonEnd`. The next payday itself must be a strictly valid date (§10).
 
+> **At least one payday must fall inside the horizon.** A strictly valid `next`
+> payday that is **after `horizonEnd`** (more than 36 months out) generates **zero**
+> paydays, which makes the forecast and the `avg = totalOutflow / paychecksInHorizon`
+> check undefined (division by zero). This is **rejected as invalid** — on live
+> input, on import, and before any simulation or average is computed. Concretely:
+> reject unless the schedule produces `paychecksInHorizon >= 1` (equivalently, the
+> first generated payday is `<= horizonEnd`). The plain-language message: "Your next
+> payday is too far in the future — pick a date within the next 3 years."
+
 > **Twice-monthly pay is intentionally excluded.** Modeling it correctly needs two
 > fixed anchor dates, which a single "next payday" input cannot capture. Only
 > weekly / biweekly / monthly are supported.
@@ -168,15 +177,44 @@ plan, wherever it falls.
    transfer, so the user keeps the most each paycheck — and report the startup
    catch-up `requiredCatchUpForTransfer(Xᵣ)` that bridges the early gap.
 
-Let `deepest∞ = simulate(∞).minBal` (the lowest balance under an infinite transfer,
-i.e. the pre-first-payday floor). Then `preNeed = max(0, billsAccountBalanceToday −
-deepest∞)` is the share of the pre-first-payday need the existing balance already
-covers; it drives the adaptive "Why this amount?" copy (when the account already
-holds enough, no catch-up is shown and the leftover balance slightly lowers `X`).
+**Decomposing the pre-first-payday need.** Because same-day bills apply before the
+same-day paycheck (§5), a bill due **on or before** the first payday must be met with
+no transfer yet landed. Define, in order:
+
+- `preFirstPaydayOutflow` — total of all bill occurrences due **on or before** the
+  first payday.
+- `availableAboveCushion = max(0, billsAccountBalanceToday − cushion)` — the part of
+  the current balance that sits **above the cushion** and can absorb those bills
+  without breaching the floor. (Zero when the account is at, below, or overdrawn
+  relative to the cushion.)
+- `coveredByCurrentBalance = min(preFirstPaydayOutflow, availableAboveCushion)` — how
+  much of the pre-first-payday outflow the current balance actually covers.
+- `preFirstPaydayShortfall = max(0, preFirstPaydayOutflow − coveredByCurrentBalance)`
+  — the pre-first-payday outflow the current balance does **not** cover.
+
+The normal-branch startup catch-up is then
+`preFirstPaydayShortfall + max(0, cushion − billsAccountBalanceToday)` — the
+uncovered pre-payday bills **plus** any top-up needed to bring an at/below-cushion
+account up to the cushion. (This equals `requiredCatchUpForTransfer(∞)`.) Do **not**
+describe `billsAccountBalanceToday − deepest∞` as "covered by current balance" — only
+`coveredByCurrentBalance` above is.
+
+These quantities drive the adaptive **"Why this amount?"** copy:
+
+- `coveredByCurrentBalance == preFirstPaydayOutflow > 0` and no cushion top-up → the
+  current balance covers all bills due before/on the first payday, so **no catch-up**
+  is needed and the leftover above-cushion balance slightly lowers `X`.
+- `0 < coveredByCurrentBalance < preFirstPaydayOutflow` → the current balance covers
+  **part** of the pre-first-payday bills; the remaining `preFirstPaydayShortfall` is
+  the catch-up.
+- `coveredByCurrentBalance == 0` → the current balance covers **none** of them
+  (at/below cushion), so the catch-up is the full `preFirstPaydayOutflow` plus any
+  cushion top-up.
 
 When a catch-up is required, the two hero labels read **"…each paycheck after
-setup."** The explanation is **cause-aware**: bills-before-first-payday,
-early-bills-after-first-payday, below-cushion, or a combination.
+setup."** The explanation is **cause-aware**: bills-before-first-payday (fully or
+partially uncovered), early-bills-after-first-payday, below-cushion, or a
+combination.
 
 ### Example — early underfunding is a timing problem, not "impossible"
 
@@ -305,10 +343,12 @@ leave current data untouched. Reject when:
 - The file is not an object, or has no `bills` array.
 - `testToday` (if present) is not a strictly valid date.
 - Paycheck (if present): `amount` not finite or `<= 0`; `freq` not one of
-  weekly/biweekly/monthly; `next` not a strictly valid date;
-  `billsAccountBalanceToday` (prototype field: `setAside`) **not finite** — note it
-  **may be negative** (an overdrawn account) and a negative value must **not** be
-  rejected; `cushion` not finite or `< 0`.
+  weekly/biweekly/monthly; `next` not a strictly valid date; `next` strictly valid
+  but generating **zero paydays inside the horizon** (i.e. `next > horizonEnd` /
+  `paychecksInHorizon < 1`) — reject **before** any simulation or `avg` computation,
+  same as live input (§3); `billsAccountBalanceToday` (prototype field: `setAside`)
+  **not finite** — note it **may be negative** (an overdrawn account) and a negative
+  value must **not** be rejected; `cushion` not finite or `< 0`.
 - Any bill — reject if: `name` missing/empty; `amount` not finite or `<= 0`;
   `dueDate` not a strictly valid date; `freq` not one of monthly/quarterly/annual.
 - **Optional debt fields (`balance`, `apr`) are optional on every bill.** Missing or

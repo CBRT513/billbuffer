@@ -96,6 +96,17 @@
 
 ### The Banned Dictionary
 
+> **Scope (2026-07-01):** this dictionary governs **general marketing and product
+> encouragement copy** — headlines, onboarding, explanations, nudges. It does **not**
+> ban the **literal labels of required input fields** a user must recognize to enter
+> their own data. Specifically, the optional revolving-debt field may be labeled
+> **"Interest rate (APR %)"** because credit-card users recognize exactly that phrase;
+> the technical field name stays `apr` (see `CALCULATION_ENGINE_SPEC.md`). This is a
+> plain field label only — do **not** wrap it in coaching or financial-literacy
+> language. "Amortization" likewise stays out of user-facing copy; the payoff estimate
+> is described in plain terms ("paid off in", "interest paid"), never labeled
+> "amortization."
+
 **NEVER SAY:**
 ❌ Budget/Budgeting
 ❌ Assets/Liabilities
@@ -103,7 +114,7 @@
 ❌ Fiscal/Financial responsibility
 ❌ Debt-to-income ratio
 ❌ Amortization
-❌ Interest/APR
+❌ Interest/APR — *except* the literal debt-field label "Interest rate (APR %)" (see scope note above)
 ❌ Credit utilization
 ❌ Emergency fund
 ❌ Financial literacy

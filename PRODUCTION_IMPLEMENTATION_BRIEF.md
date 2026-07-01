@@ -88,7 +88,8 @@ type BillFreq  = "monthly" | "quarterly" | "annual";     // bill
 interface Paycheck {
   amount: number;        // > 0, finite
   freq: Frequency;
-  next: string;          // "YYYY-MM-DD", strictly valid
+  next: string;          // "YYYY-MM-DD", strictly valid AND must produce >= 1 payday
+                         // inside the 36-month horizon (reject if next > horizonEnd)
   // Actual current balance of the account bills are paid from.
   // MAY BE NEGATIVE (overdrawn). Must be finite. NOT required to be >= 0.
   // (Prototype field name was `setAside` — legacy.)
@@ -139,7 +140,8 @@ interface AppData {
   plain-language message and the current data is left untouched.
 - Rejection cases (see spec for the full list): not an object / no bills array,
   non-finite or non-positive amounts, invalid frequencies, invalid or impossible
-  dates, negative cushion, and a "stop when paid off" toggle with a blank balance.
+  dates, a next payday that yields **zero paydays in the 36-month horizon**, negative
+  cushion, and a "stop when paid off" toggle with a blank balance.
 - Import/export is the user's only data portability path and a core trust feature —
   it is **in MVP**.
 
