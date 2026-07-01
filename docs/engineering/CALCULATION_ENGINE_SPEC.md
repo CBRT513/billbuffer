@@ -24,11 +24,15 @@ It chooses between plans **lexicographically** (full policy in §6):
 2. **Then minimize the recurring transfer** — within that minimum-catch-up plan,
    the smallest `X` that keeps the bills account at or above the cushion across a
    36-month simulation from the real starting balance.
-3. If that `X <= paycheck`, use it. If `X > paycheck`, it is *not* automatically
-   impossible: if the long-run average outflow per paycheck also exceeds the
-   paycheck the plan is genuinely impossible (§11); otherwise it is a **timing
-   problem** resolved by an affordable recurring transfer plus a larger startup
-   catch-up (§6).
+3. If that `X <= paycheck`, use it. If `X > paycheck`, the plan is **not**
+   automatically impossible — apply the **balance-aware** test of §11: is there any
+   recurring transfer `X <= paycheck` that keeps the account at or above the cushion,
+   given `billsAccountBalanceToday`, `cushion`, the horizon's paycheck count, and
+   total outflow? (`avg > paycheck` is only an affordability *signal*, never the
+   decider — a large starting balance can keep it feasible.) If **no** feasible
+   `X <= paycheck` exists → **genuinely impossible** (§11); otherwise it is a
+   **timing problem** resolved by an affordable recurring transfer plus a larger
+   startup catch-up (§6).
 
 Two things the engine deliberately does **not** do: it does **not** globally
 minimize the recurring transfer by allowing an arbitrarily large catch-up, and it
