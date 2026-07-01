@@ -12,17 +12,38 @@ the *behavior*, not the source of the *code*.
 
 ## 1. Overview — fixed-transfer forecast engine
 
-The engine answers one question: **the smallest fixed per-paycheck transfer `X`
-into the bills account such that, simulated from the real starting balance over a
-36-month horizon, the account never drops below the cushion.**
+The engine selects **one practical plan**, made of two parts:
 
-It is **not** an average of bills. It is a **binary search over a day-by-day
-simulation** of the account, exploiting the fact that the lowest projected balance
-rises monotonically as `X` increases.
+- a **recurring fixed per-paycheck transfer** `X` into the bills account, and
+- an **optional one-time startup catch-up** for early underfunding.
+
+It chooses between plans **lexicographically** (full policy in §6):
+
+1. **Minimize the startup catch-up first** — prefer the plan needing the smallest
+   up-front amount.
+2. **Then minimize the recurring transfer** — within that minimum-catch-up plan,
+   the smallest `X` that keeps the bills account at or above the cushion across a
+   36-month simulation from the real starting balance.
+3. If that `X <= paycheck`, use it. If `X > paycheck`, it is *not* automatically
+   impossible: if the long-run average outflow per paycheck also exceeds the
+   paycheck the plan is genuinely impossible (§11); otherwise it is a **timing
+   problem** resolved by an affordable recurring transfer plus a larger startup
+   catch-up (§6).
+
+Two things the engine deliberately does **not** do: it does **not** globally
+minimize the recurring transfer by allowing an arbitrarily large catch-up, and it
+does **not** minimize the catch-up by recommending a recurring transfer larger than
+one paycheck. The UI still shows a single answer: the recurring transfer, plus the
+startup catch-up when one is needed.
+
+It is **not** an average of bills. The recurring transfer is found by **binary
+search over a day-by-day simulation** of the account, exploiting the fact that the
+lowest projected balance rises monotonically as `X` increases.
 
 Outputs:
 
-- `X` — exact smallest steady transfer (currency, internally to the cent).
+- `X` — the recurring per-paycheck transfer chosen by the policy above (currency,
+  internally to the cent).
 - `yours` = `paycheck − X`.
 - `startCatchUp` — one-time amount that must be put into the account up front to
   bridge **early** underfunding under the chosen transfer (before *or* after the
@@ -288,17 +309,27 @@ leave current data untouched. Reject when:
   `billsAccountBalanceToday` (prototype field: `setAside`) **not finite** — note it
   **may be negative** (an overdrawn account) and a negative value must **not** be
   rejected; `cushion` not finite or `< 0`.
-- Any bill: missing/empty name; `amount` not finite or `<= 0`; `dueDate` not a
-  strictly valid date; `freq` not one of monthly/quarterly/annual; `balance` not
-  finite or `< 0`; `apr` not finite or `< 0`.
-- A bill with `showPayoff` **and** `stopWhenPaid` but a **blank** balance →
-  rejected ("a paid-off forecast toggle needs a balance; use 0 if already paid
-  off"). Balance `0` or `> 0` is accepted; blank balance is allowed only when the
-  toggle is off.
+- Any bill — reject if: `name` missing/empty; `amount` not finite or `<= 0`;
+  `dueDate` not a strictly valid date; `freq` not one of monthly/quarterly/annual.
+- **Optional debt fields (`balance`, `apr`) are optional on every bill.** Missing or
+  blank `balance`/`apr` are **normalized to 0**, not rejected — an ordinary
+  (non-revolving) bill with no `balance`/`apr` in the file is valid. Only when a
+  value is **actually provided** (non-blank) must it be finite and `>= 0`, else
+  reject. (Do not run the finite/`>= 0` check against a missing/blank field before
+  the default applies.)
+- **`stopWhenPaid`** is treated as `false` unless `showPayoff` is true.
+- **Revolving debt (`showPayoff` true):** frequency is coerced to monthly. If
+  `stopWhenPaid` is **also** true, `balance` is **required** — a blank/missing
+  balance is **rejected** ("a paid-off forecast toggle needs a balance; use 0 if
+  already paid off"); `balance` `0` (already paid off) or `> 0` is accepted. If
+  `stopWhenPaid` is false, a blank/missing balance normalizes to 0 like any other
+  bill.
 
-On success, normalize: trim names, default missing
-`billsAccountBalanceToday`/`cushion`/`apr` to 0, coerce `showPayoff` bills to
-monthly frequency, and assign ids where missing.
+On success, normalize: trim names, default missing/blank
+`billsAccountBalanceToday`/`cushion`/`balance`/`apr` to 0, coerce `showPayoff` bills
+to monthly frequency, and assign ids where missing. (Normalization of blank/missing
+`balance`/`apr` happens **before** the finite/`>= 0` checks, so a normal bill
+without those fields validates cleanly.)
 
 ---
 

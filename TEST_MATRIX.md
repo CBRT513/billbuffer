@@ -83,6 +83,9 @@ ships for it.
 | F7 | **Stop-when-paid + blank balance in file** | as E6 but via import | rejected with the same message |
 | F8 | **Normalization on success** | valid file with untrimmed names, missing apr/cushion, card with non-monthly freq | names trimmed, defaults applied, card coerced monthly, ids assigned |
 | F9 | **Negative bills-account balance in file ACCEPTED** | file with `billsAccountBalanceToday` (legacy `setAside`) = −100 | **accepted** (finite) — must **not** be rejected, unlike negative cushion (F6). Live input allows it, so import must too. |
+| F10 | **Normal bill with NO balance/apr ACCEPTED** | ordinary bill (`showPayoff` false) with `balance`/`apr` fields absent | **accepted**; `balance`/`apr` normalized to 0. Not rejected by the finite check. |
+| F11 | **Normal bill with BLANK balance/apr ACCEPTED** | ordinary bill with `balance: ""` / `apr: ""` (or null) | **accepted**; blanks normalized to 0 before validation. |
+| F12 | **Revolving debt, stop-when-paid, balance 0 ACCEPTED** | `showPayoff` + `stopWhenPaid` true with `balance` = 0 | **accepted** (means already paid off → generates zero future payments). Contrast F7 (blank balance → rejected). |
 
 ## G. Privacy / offline (integration)
 
