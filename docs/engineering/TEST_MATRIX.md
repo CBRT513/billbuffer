@@ -5,8 +5,10 @@
 
 These tests are written against `CALCULATION_ENGINE_SPEC.md`. The engine and
 validators must pass all of them **before any UI is wired** (Phase 3–4 of the
-implementation brief). Inputs use the test-only "today" override; no UI control
-ships for it.
+implementation brief). Test cases set "today" via the **test-harness-only** date
+override — it lives in harness code/data, never in the data model, never in
+persisted or imported user data, and no UI control ships for it. (Imports carrying
+`testToday` are rejected — see F14.)
 
 > **Fixture note:** the regression anchor is **Fixture A**, a synthetic,
 > non-personal scenario defined in `CALCULATION_ENGINE_SPEC.md` §13. All names and
@@ -89,6 +91,7 @@ ships for it.
 | F11 | **Normal bill with BLANK balance/apr ACCEPTED** | ordinary bill with `balance: ""` / `apr: ""` (or null) | **accepted**; blanks normalized to 0 before validation. |
 | F12 | **Revolving debt, stop-when-paid, balance 0 ACCEPTED** | `showPayoff` + `stopWhenPaid` true with `balance` = 0 | **accepted** (means already paid off → generates zero future payments). Contrast F7 (blank balance → rejected). |
 | F13 | **Valid next payday but NO paydays in horizon → rejected (import)** | file whose `next` is strictly valid but more than 36 months out (0 paydays in horizon) | **rejected** with the same message as live input (C8), before any simulation/`avg`; current data untouched. |
+| F14 | **Import containing `testToday` → rejected (present at all)** | file that includes a `testToday` field — test **both** a strictly **valid** value (e.g. `"2030-01-01"`) and an **invalid** one (e.g. `"2026-02-31"`) | **rejected in both cases** — `testToday` is prototype/test-harness only and is never accepted or persisted from a user import. Not stripped-and-loaded; current data untouched. |
 
 ## G. Privacy / offline (integration)
 

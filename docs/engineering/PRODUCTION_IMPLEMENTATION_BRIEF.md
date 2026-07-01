@@ -115,7 +115,9 @@ interface AppData {
   onboarded: boolean;
   paycheck: Paycheck | null;
   bills: Bill[];
-  // NOTE: no `testToday` in production — that is a prototype-only testing hook.
+  // NOTE: no `testToday` in production. It is a prototype / test-harness-only date
+  // override — never in the data model, never persisted, and an import containing
+  // `testToday` (valid or invalid) is REJECTED (see CALCULATION_ENGINE_SPEC.md §12).
 }
 ```
 

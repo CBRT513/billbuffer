@@ -62,7 +62,8 @@ search). Display rounding is directional — see §9.
 
 - "Today" is the current local date at midnight. (The prototype additionally
   supports a `testToday` override; production exposes this **only** to the test
-  harness, never in the UI.)
+  harness — never in the UI, never in the data model, and never in persisted or
+  imported user data. Imports containing `testToday` are rejected; see §12.)
 - The horizon end is **today shifted forward 36 months**, using month-clamped math
   (§4) so the end date is well-defined regardless of the day-of-month.
 - All paydays and bill occurrences are generated within `[today, horizonEnd]`.
@@ -301,8 +302,9 @@ dates instead of silently rolling them:
 - Non-matching formats, out-of-range months/days → rejected.
 
 Strict validation applies to **every** date the engine touches: paycheck next
-payday, each bill due date, the test-only "today" override, imported dates, and all
-internal recurrence math.
+payday, each bill due date, the test-only "today" override (in the test harness
+only — never from imported user data, which rejects `testToday` outright per §12),
+imported dates, and all internal recurrence math.
 
 ---
 
@@ -341,7 +343,12 @@ replaces any state. On any failure, reject with a clear, plain-language message 
 leave current data untouched. Reject when:
 
 - The file is not an object, or has no `bills` array.
-- `testToday` (if present) is not a strictly valid date.
+- The payload contains a **`testToday`** field **at all**. `testToday` is a
+  **prototype / test-harness-only** date override; production **never** accepts or
+  persists it. Reject the import if `testToday` is present, **whether its value is
+  valid or invalid** — do **not** strip-and-continue. (Test fixtures may set a test
+  "today" only inside test-harness code/data, never in persisted or imported user
+  data.)
 - Paycheck (if present): `amount` not finite or `<= 0`; `freq` not one of
   weekly/biweekly/monthly; `next` not a strictly valid date; `next` strictly valid
   but generating **zero paydays inside the horizon** (i.e. `next > horizonEnd` /
