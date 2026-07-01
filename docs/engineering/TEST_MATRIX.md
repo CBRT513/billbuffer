@@ -60,8 +60,43 @@ persisted or imported user data, and no UI control ships for it. (Imports carryi
 | D2 | **Same-day ordering: bill before paycheck** | a bill and a payday on the same date, balance tight | bill applied first; if that breaches the cushion, it is reflected (a same-day paycheck does not "rescue" a same-day bill) |
 | D3 | **Starting catch-up — bill before payday #1** | a bill due before payday #1 with start $0 | non-zero `startCatchUp` (rounded up); labels switch to "…after setup"; cause-aware explanation |
 | D4 | **Existing balance covers pre-payday need** | start balance ≥ pre-first-payday outflow | no catch-up; leftover balance slightly lowers `X`; adaptive "why" copy |
-| D5 | **Early underfunding AFTER payday #1 is a timing case, not impossible** | $100 weekly, start $0, cushion $0, one $1,000 annual bill first due after **two** paychecks have landed | **NOT** `impossible` (avg ≈ $19.23/pay ≤ $100). Engine classifies it as early underfunding: recommends a feasible recurring transfer (**$19.24 → shown $20**) and reports a one-time **startup catch-up $961.52 → shown $962** that brings the lowest point to the cushion. The naïve "infinite-transfer" catch-up ($0) + binary-searched transfer ($500 > paycheck) → false "impossible" is the **bug guarded against**. |
+| D5 | **Early underfunding AFTER payday #1 is a timing case, not impossible** | Fully pinned (see fixture below the table) — harness today `2030-01-01`, `$100` **weekly**, next payday `2030-01-08`, start `$0`, cushion `$0`, one `$1,000` **annual** bill due `2030-01-20` (after exactly two paychecks: 01-08 & 01-15, before the 3rd on 01-22). | **NOT** `impossible`. Horizon `[2030-01-01, 2033-01-01]` → **156 weekly paychecks** (first `2030-01-08`, last `2032-12-28`); the annual bill recurs **3×** (`2030-01-20`, `2031-01-20`, `2032-01-20`) so `totalOutflow = $3,000`. `avg = 3000 / 156 = $19.2308/pay ≤ $100` → timing case. Recommended recurring transfer `Xᵣ = ceil($19.2308) = `**`$19.24`** (shown **$20**); startup catch-up `= $961.52` (shown **$962**) brings the lowest point (`-$961.52` on `2030-01-20`) up to the `$0` cushion. Guards against the naïve infinite-transfer catch-up ($0) + binary-searched transfer ($500 > paycheck) → false "impossible". |
 | D6 | **Partial pre-first-payday coverage** | cushion $0, `billsAccountBalanceToday` = $100, one $250 bill due **before** payday #1 | `preFirstPaydayOutflow` = $250; `availableAboveCushion` = $100; `coveredByCurrentBalance` = **$100** (partial); `preFirstPaydayShortfall` = **$150**. Startup catch-up reflects the **$150** shortfall (not $0, not the full $250); "why" copy says the balance covers part of the bills due before your next payday. |
+
+### D5 fixture (fully dated — reproducible, no anchor ambiguity)
+
+The exact D5 inputs. **The payday count and the expected values depend on these
+anchors** — a different `next` payday shifts the horizon's weekly payday count
+(e.g. `next = 2030-01-01` yields 157, not 156) and changes `avg`, so all three dates
+are pinned:
+
+```json
+{
+  "testToday": "2030-01-01",              // harness date only (never persisted; see §12)
+  "paycheck": { "amount": 100, "freq": "weekly", "next": "2030-01-08",
+                "billsAccountBalanceToday": 0, "cushion": 0 },
+  "bills": [ { "name": "Annual bill", "amount": 1000,
+               "dueDate": "2030-01-20", "freq": "annual", "showPayoff": false } ]
+}
+```
+
+Derivation (all values reproducible from the fixture):
+
+| Quantity | Value |
+|---|---|
+| Horizon | `[2030-01-01, 2033-01-01]` (today + 36 months) |
+| Weekly paychecks in horizon | **156** (first `2030-01-08`, last `2032-12-28`) |
+| Annual-bill occurrences in horizon | **3** — `2030-01-20`, `2031-01-20`, `2032-01-20` |
+| Paychecks landed on/before the bill (`2030-01-20`) | 2 (`01-08`, `01-15`) |
+| `totalOutflow` | `3 × $1,000 = $3,000` |
+| `avg = totalOutflow / paychecks` | `3000 / 156 = $19.2308…` (≤ $100 ⇒ timing case, **not impossible**) |
+| Recommended recurring transfer `Xᵣ = ceil(avg)` | **$19.24** (displayed **$20**, rounded up) |
+| Lowest balance under `Xᵣ` (no catch-up) | `-$961.52` on `2030-01-20` |
+| Startup catch-up `= ceil(cushion − lowest)` | **$961.52** (displayed **$962**, rounded up) |
+| Lowest balance under `Xᵣ` + catch-up | `$0.00` (= cushion) ✓ |
+
+> The annual bill recurs **3×** across the 36-month horizon, so `totalOutflow` is
+> `$3,000` (not `$1,000`) and `avg` is `$19.23`, not `$6.41`.
 
 ## E. Revolving debt
 
