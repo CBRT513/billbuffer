@@ -12,9 +12,14 @@ Read alongside `ARCHITECTURE_GUARDRAILS.md` (the rules), `BILLBUFFER_TECHNICAL_S
 
 BillBuffer answers **one question**: *how much of each paycheck is for bills, and
 how much is safe to spend?* It is not a budget app, a tracker, or a financial
-planner. It computes the **smallest steady per-paycheck transfer** into a bills
-account that keeps that account at or above a chosen cushion across a 36-month
-forecast, and shows the rest as the user's to spend.
+planner. It computes a **recurring per-paycheck transfer** into a bills account —
+plus a one-time **startup catch-up** when bills land before enough paychecks have —
+that keeps the account at or above a chosen cushion across a 36-month forecast, and
+shows the rest as the user's to spend. The transfer is chosen by a **minimum-catch-up
+(lexicographic) policy** — minimize the catch-up first, then the recurring transfer —
+**not** by globally minimizing the transfer; see `CALCULATION_ENGINE_SPEC.md` §1/§6.
+A large bill due early that is affordable over time is handled as a **timing problem**
+(affordable recurring transfer + startup catch-up), not marked impossible.
 
 The emotional promise is privacy and calm: no login, no bank link, works in
 airplane mode, "we don't know you exist."
