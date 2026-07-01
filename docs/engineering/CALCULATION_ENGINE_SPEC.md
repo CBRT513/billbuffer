@@ -187,10 +187,22 @@ plan, wherever it falls.
      the existing balance cover the bills; the shortfall is front-loading, resolved by
      a startup catch-up). A large balance can make this feasible even when
      `avg > paycheck` — see the prefunded example in §11.
-3. **Timing resolution.** Recommend a feasible recurring transfer
-   `Xᵣ = min(paycheck, ceil(avg to the cent))` — the smallest long-run-sustainable
-   transfer, so the user keeps the most each paycheck — and report the startup
-   catch-up `requiredCatchUpForTransfer(Xᵣ)` that bridges the early gap.
+3. **Timing resolution.** Recommend a feasible recurring transfer — the smallest
+   long-run-sustainable transfer, **balance-aware** (the existing balance is netted
+   out, so the user keeps the most each paycheck):
+
+   ```
+   Xᵣ = min(
+     paycheck,
+     ceilToCent( max(0, (totalOutflow + cushion − billsAccountBalanceToday) / paychecksInHorizon) )
+   )
+   ```
+
+   `Xᵣ` is the per-paycheck amount that lands the end balance at the cushion; a larger
+   `billsAccountBalanceToday` **lowers** it. (With `billsAccountBalanceToday =
+   cushion = 0` this is exactly `ceilToCent(avg)`.) Then report the startup catch-up
+   `requiredCatchUpForTransfer(Xᵣ)` — computed from the actual balance — that bridges
+   the early gap.
 
 **Decomposing the pre-first-payday need.** Because same-day bills apply before the
 same-day paycheck (§5), a bill due **on or before** the first payday must be met with
