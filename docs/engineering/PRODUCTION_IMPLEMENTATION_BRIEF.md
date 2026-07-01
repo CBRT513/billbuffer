@@ -3,8 +3,10 @@
 **Status:** Approved direction. Build foundation only after this brief + the specs
 are accepted. **Updated:** 2026-06-29
 
-Read alongside `ARCHITECTURE_GUARDRAILS.md` (the rules), `BILLBUFFER_TECHNICAL_STACK.md`
-(the stack), `CALCULATION_ENGINE_SPEC.md` (the math), and `TEST_MATRIX.md` (the proof).
+Governed by [`../vision/BILLBUFFER_CONSTITUTION.md`](../vision/BILLBUFFER_CONSTITUTION.md)
+(the supreme authority). Read alongside `ARCHITECTURE_GUARDRAILS.md` (the rules),
+`BILLBUFFER_TECHNICAL_STACK.md` (the stack), `CALCULATION_ENGINE_SPEC.md` (the math),
+and `TEST_MATRIX.md` (the proof).
 
 ---
 

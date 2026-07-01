@@ -3,6 +3,11 @@
 **Status:** Locked. These are non-negotiable for the MVP.
 **Updated:** 2026-06-29
 
+> These guardrails are the technical implementation of
+> [`../vision/BILLBUFFER_CONSTITUTION.md`](../vision/BILLBUFFER_CONSTITUTION.md)
+> (Rules 2 "Privacy First" and 7 "Offline by Default"). The Constitution is the
+> supreme authority; if anything here ever conflicts with it, the Constitution wins.
+
 These guardrails exist to stop "backend creep" — the slow drift from a private,
 on-device tool toward infrastructure that quietly breaks the core promise:
 **we don't know you exist.** If a proposed change violates a guardrail below,
