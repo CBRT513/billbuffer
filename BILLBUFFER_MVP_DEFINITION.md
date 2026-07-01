@@ -5,9 +5,11 @@
 > docs win:
 > - **Calculation:** the "monthly-equivalent / averaging" pseudo-code below is
 >   **superseded** by `CALCULATION_ENGINE_SPEC.md` — the engine is a binary-searched
->   recurring transfer over a 36-month simulation (chosen by the minimum-catch-up
->   policy, plus a startup catch-up when needed), **not** an average. See the spec
->   §1/§6 for the exact policy.
+>   recurring transfer over a 36-month simulation (plus a startup catch-up when
+>   needed), chosen by a **two-branch policy** (normal: minimize catch-up, then the
+>   smallest transfer; timing fallback for early-but-affordable bills: cap the
+>   transfer near the average outflow and accept a larger catch-up), **not** an
+>   average. See the spec §1/§6 for the exact rule.
 > - **Pay frequencies:** weekly / biweekly / monthly only. **Twice-monthly is
 >   removed** (a single "next payday" input can't anchor two fixed dates).
 > - **Bill frequencies:** monthly / quarterly / annual only. **Semi-annual is
@@ -62,9 +64,10 @@ Calculate per-paycheck bill allocation
 > average; it binary-searches a **recurring per-paycheck transfer** that keeps the
 > bills account at/above the cushion across a 36-month day-by-day simulation, plus a
 > one-time starting catch-up when bills land before enough paychecks. The transfer is
-> chosen by a **minimum-catch-up (lexicographic) policy** — minimize catch-up first,
-> then the transfer — not by globally minimizing the transfer (see spec §1/§6).
-> Directional rounding: bills round up, "yours" rounds down.
+> chosen by a **two-branch policy** (normal: minimize catch-up first, then the
+> smallest transfer; timing fallback for early-but-affordable bills: cap the transfer
+> near the average outflow and accept a larger catch-up) — see spec §1/§6 for the
+> exact rule. Directional rounding: bills round up, "yours" rounds down.
 
 ```javascript
 // ORIGINAL INTENT ONLY — NOT the production algorithm. See CALCULATION_ENGINE_SPEC.md.

@@ -15,11 +15,20 @@ how much is safe to spend?* It is not a budget app, a tracker, or a financial
 planner. It computes a **recurring per-paycheck transfer** into a bills account —
 plus a one-time **startup catch-up** when bills land before enough paychecks have —
 that keeps the account at or above a chosen cushion across a 36-month forecast, and
-shows the rest as the user's to spend. The transfer is chosen by a **minimum-catch-up
-(lexicographic) policy** — minimize the catch-up first, then the recurring transfer —
-**not** by globally minimizing the transfer; see `CALCULATION_ENGINE_SPEC.md` §1/§6.
-A large bill due early that is affordable over time is handled as a **timing problem**
-(affordable recurring transfer + startup catch-up), not marked impossible.
+shows the rest as the user's to spend. The plan is chosen by a **two-branch policy**
+(full detail in `CALCULATION_ENGINE_SPEC.md` §1/§6):
+
+- **Normal branch:** minimize the startup catch-up **first**, then take the smallest
+  recurring transfer that holds the cushion — **not** the globally smallest transfer.
+- **Timing fallback:** if that recurring transfer would exceed one paycheck yet the
+  bills are affordable over time (average outflow per paycheck ≤ paycheck), it is a
+  **timing problem, not impossible** — the engine does **not** minimize the catch-up
+  here; instead it caps the recurring transfer at an affordable level (≈ the average
+  outflow) and accepts a **larger** startup catch-up.
+
+The engine never recommends a recurring transfer larger than one paycheck, and never
+allows an arbitrarily large catch-up just to shrink the transfer. The UI still gives
+one answer: a recurring transfer plus a startup catch-up when needed.
 
 The emotional promise is privacy and calm: no login, no bank link, works in
 airplane mode, "we don't know you exist."
