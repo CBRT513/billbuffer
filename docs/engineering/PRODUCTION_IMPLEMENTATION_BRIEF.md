@@ -22,11 +22,13 @@ shows the rest as the user's to spend. The plan is chosen by a **two-branch poli
 
 - **Normal branch:** minimize the startup catch-up **first**, then take the smallest
   recurring transfer that holds the cushion — **not** the globally smallest transfer.
-- **Timing fallback:** if that recurring transfer would exceed one paycheck yet the
-  bills are affordable over time (average outflow per paycheck ≤ paycheck), it is a
-  **timing problem, not impossible** — the engine does **not** minimize the catch-up
-  here; instead it caps the recurring transfer at an affordable level (≈ the average
-  outflow) and accepts a **larger** startup catch-up.
+- **Timing fallback:** if the normal recurring transfer would exceed one paycheck, the
+  engine applies the **balance-aware impossible-plan test** from
+  `CALCULATION_ENGINE_SPEC.md` §11. If a feasible recurring transfer `X <= paycheck`
+  exists when considering `billsAccountBalanceToday`, cushion, horizon paychecks, and
+  total outflow, it is a **timing / setup problem, not impossible** (average outflow is
+  only a signal, **not** the gate — a large starting balance can keep it feasible). The
+  engine then uses an affordable recurring transfer plus the required startup catch-up.
 
 The engine never recommends a recurring transfer larger than one paycheck, and never
 allows an arbitrarily large catch-up just to shrink the transfer. The UI still gives
