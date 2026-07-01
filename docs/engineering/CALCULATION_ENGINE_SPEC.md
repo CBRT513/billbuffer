@@ -49,9 +49,10 @@ Outputs:
   bridge **early** underfunding under the chosen transfer (before *or* after the
   first payday); see §6.
 - `minBal`, `minDate` — lowest projected balance under the plan and when it occurs.
-- `impossible` — true only when the long-run **average** outflow per paycheck
-  exceeds the paycheck (genuine income shortfall), **not** merely when the steady
-  transfer starts out above one paycheck; see §6 and §11.
+- `impossible` — true only when **no** recurring transfer `X ≤ paycheck` can hold the
+  plan even with the permitted catch-up (a **balance-aware** test: a large
+  `billsAccountBalanceToday` can make it feasible even when average outflow exceeds the
+  paycheck). `avg > paycheck` is a first signal, **not** the final test; see §6 and §11.
 
 All money math is done in a way that avoids float drift (integer cents in the
 search). Display rounding is directional — see §9.
@@ -166,13 +167,22 @@ plan, wherever it falls.
    `billsAccountBalanceToday + catchUp₀`, the simulation stays at or above the
    cushion (§7). If `X₀ <= paycheck`, **use `(X₀, catchUp₀)`** — the common path,
    which minimizes the upfront amount.
-2. **Affordability check.** If `X₀ > paycheck`, do **not** immediately mark the plan
-   impossible. Compute the long-run average outflow per paycheck:
-   `avg = totalOutflow / paychecksInHorizon`.
-   - If `avg > paycheck` → genuinely **impossible** (§11): over the full horizon,
-     bills cost more than income.
-   - If `avg <= paycheck` → a **timing / catch-up problem**, not an income problem:
-     bills are front-loaded, but income covers them over time.
+2. **Affordability check — balance-aware.** If `X₀ > paycheck`, do **not** mark the
+   plan impossible on `avg` alone. `avg = totalOutflow / paychecksInHorizon` is only a
+   **first signal** — it **ignores the starting balance**. The plan is impossible only
+   if **no** `X` in `[0, paycheck]` is feasible even with the permitted catch-up —
+   concretely, iff
+   `billsAccountBalanceToday + paychecksInHorizon × paycheck < totalOutflow + cushion`
+   (equivalently, the smallest feasible transfer `X* > paycheck`; the existing balance
+   is already inside the simulation, so a larger `billsAccountBalanceToday` lowers
+   `X*`).
+   - **Fails** that test → genuinely **impossible** (§11): even a full-paycheck
+     transfer every period, plus the starting balance, cannot cover the bills over the
+     horizon.
+   - **Passes** the test → **feasible**: a **timing / catch-up problem** (income and/or
+     the existing balance cover the bills; the shortfall is front-loading, resolved by
+     a startup catch-up). A large balance can make this feasible even when
+     `avg > paycheck` — see the prefunded example in §11.
 3. **Timing resolution.** Recommend a feasible recurring transfer
    `Xᵣ = min(paycheck, ceil(avg to the cent))` — the smallest long-run-sustainable
    transfer, so the user keeps the most each paycheck — and report the startup
@@ -310,29 +320,48 @@ imported dates, and all internal recurrence math.
 
 ## 11. Impossible-plan state
 
-A plan is impossible **only when income genuinely cannot cover the bills over the
-full horizon** — i.e. when the long-run average outflow per paycheck exceeds the
-paycheck:
+A plan is impossible **only when no recurring transfer `X` in `[0, paycheck]` can
+keep the bills account at or above the cushion across the horizon, even after the
+permitted startup/catch-up policy (§6).** Equivalently, the smallest feasible
+recurring transfer `X*` — computed from the **actual** `billsAccountBalanceToday`
+(§6 step 1), so the existing balance is already applied — exceeds one paycheck.
+
+**`avg > paycheck` is a first affordability signal only, never the final test.** It
+ignores the starting balance. The balance-aware criterion is:
 
 ```
-avg = totalOutflow / paychecksInHorizon
-impossible = paycheck > 0 && avg > paycheck
+avg = totalOutflow / paychecksInHorizon          // first signal only (ignores balance)
+impossible = paycheck > 0
+          && (billsAccountBalanceToday + paychecksInHorizon * paycheck) < (totalOutflow + cushion)
 ```
 
-A steady transfer that merely *starts out* larger than one paycheck is **not**
-sufficient to declare impossibility. When the minimum-catch-up transfer `X₀ >
-paycheck` but `avg <= paycheck`, the plan is a **front-loading / timing problem**
-resolved by a startup catch-up (§6), not an income shortfall — the engine must take
-the timing-resolution path, not the impossible path.
+i.e. even transferring a full paycheck every period, the starting balance plus all
+paychecks still cannot cover total outflow while holding the cushion. When
+`billsAccountBalanceToday = cushion = 0` this reduces to `avg > paycheck`; a larger
+starting balance raises the left-hand side and can make an otherwise "unaffordable"
+plan feasible.
+
+**Prefunded example — feasible despite `avg > paycheck`.** Harness today `2030-01-01`,
+paycheck `$1,000` **monthly** (next `2030-01-15`), one `$1,300`/month bill (due
+`2030-01-20`), `billsAccountBalanceToday = $20,000`, cushion `$0`. Over the 36 monthly
+paychecks, `totalOutflow = $46,800` and `avg = $1,300 > $1,000` — but
+`$20,000 + 36 × $1,000 = $56,000 ≥ $46,800`, so the smallest feasible transfer is
+`X* = $744.45 ≤ paycheck` (≈ **$255** is yours each paycheck). **Not impossible** —
+the existing balance pre-funds the gap. With the *same* bills and a `$0` balance it
+**is** impossible (`$0 + $36,000 = $36,000 < $46,800`, `X* = $1,300 > paycheck`). A
+steady transfer that merely *starts out* above one paycheck is likewise not sufficient
+to declare impossibility — front-loading is a timing problem resolved by a startup
+catch-up (§6).
 
 When the plan truly is impossible, the engine reports `impossible = true` and the UI
 must:
 
 - Show **Yours = $0** (never a negative number).
 - Show **"Bills need $X"** and **"Short by $(X − paycheck)" each paycheck**, where
-  here `X = avg` (the long-run sustainable transfer the plan would require).
-- Explain that, over 3 years, bills cost more than income — so a bill must drop or
-  shrink, or income must rise.
+  `X = (totalOutflow + cushion − billsAccountBalanceToday) / paychecksInHorizon` — the
+  balance-aware sustainable transfer the plan would require.
+- Explain that, over 3 years, bills cost more than income (even after the money
+  already in the account) — so a bill must drop or shrink, or income must rise.
 
 ---
 

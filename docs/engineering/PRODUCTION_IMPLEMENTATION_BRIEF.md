@@ -13,7 +13,7 @@ and `TEST_MATRIX.md` (the proof).
 ## 1. Product goal
 
 BillBuffer answers **one question**: *how much of each paycheck is for bills, and
-how much is safe to spend?* It is not a budget app, a tracker, or a financial
+how much is safe to spend?* **It only handles bills** — not a tracker or a financial
 planner. It computes a **recurring per-paycheck transfer** into a bills account —
 plus a one-time **startup catch-up** when bills land before enough paychecks have —
 that keeps the account at or above a chosen cushion across a 36-month forecast, and
@@ -55,8 +55,8 @@ Full rationale and the explicitly-excluded list live in
 
 Mirror the validated prototype flow (six screens):
 
-1. **Welcome / privacy promise** — three calm cards ("not a budget app", "we don't
-   know you exist", "add all your bills"). Skippable.
+1. **Welcome / privacy promise** — three calm cards: "This only handles bills." ·
+   "We don't know you exist." · "Add the bills you want protected." Skippable.
 2. **Paycheck setup** — amount, frequency (weekly / every 2 weeks / monthly), next
    payday, bills-account balance today (may be negative if overdrawn), cushion
    (floor, ≥ 0, default $0). Editable later.
