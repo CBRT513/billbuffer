@@ -101,6 +101,19 @@ export function forecast(input: ForecastInput, todayIso: string): ForecastResult
 	const end = horizonEndOf(today);
 
 	const { paycheck } = input;
+
+	// Reject invalid dates up front. A malformed/impossible date must never be
+	// silently dropped: skipping a bill would understate total outflow and produce an
+	// underfunded plan, and skipping the paycheck date would misreport the horizon.
+	if (!parseIsoDate(paycheck.next)) {
+		throw new EngineError(`Invalid paycheck next payday: ${paycheck.next}`);
+	}
+	for (const bill of input.bills) {
+		if (!parseIsoDate(bill.dueDate)) {
+			throw new EngineError(`Invalid due date for bill "${bill.name}": ${bill.dueDate}`);
+		}
+	}
+
 	const payCents = toCents(paycheck.amount);
 	const startCents = toCents(paycheck.billsAccountBalanceToday); // may be negative
 	const cushionCents = toCents(paycheck.cushion);

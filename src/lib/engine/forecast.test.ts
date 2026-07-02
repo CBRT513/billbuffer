@@ -211,3 +211,42 @@ describe('purity guarantees (constraints)', () => {
 		).toThrow(EngineError);
 	});
 });
+
+describe('invalid-date rejection — never silently drop a bill (Codex P2)', () => {
+	const paycheck = fixtureA().paycheck;
+	const withBill = (dueDate: string): ForecastInput => ({
+		paycheck,
+		bills: [bill({ name: 'Bad', amount: 100, dueDate })]
+	});
+
+	it('throws on a malformed bill due date (does not silently skip it)', () => {
+		expect(() => forecast(withBill('not-a-date'), TODAY)).toThrow(EngineError);
+	});
+
+	it('throws on an impossible bill due date (2026-02-31)', () => {
+		expect(() => forecast(withBill('2026-02-31'), TODAY)).toThrow(EngineError);
+	});
+
+	it('throws on a non-leap Feb 29 bill due date (2026-02-29)', () => {
+		expect(() => forecast(withBill('2026-02-29'), TODAY)).toThrow(EngineError);
+	});
+
+	it('a bad bill date is rejected rather than understating total outflow', () => {
+		// A valid bill alongside a malformed one must not "succeed" by dropping the bad
+		// one — the whole forecast is rejected.
+		const input: ForecastInput = {
+			paycheck,
+			bills: [
+				bill({ name: 'Good', amount: 100, dueDate: '2030-01-20' }),
+				bill({ name: 'Bad', amount: 500, dueDate: '2026-02-31' })
+			]
+		};
+		expect(() => forecast(input, TODAY)).toThrow(EngineError);
+	});
+
+	it('throws on an invalid paycheck next date', () => {
+		expect(() =>
+			forecast({ paycheck: { ...paycheck, next: '2026-02-31' }, bills: [] }, TODAY)
+		).toThrow(EngineError);
+	});
+});
