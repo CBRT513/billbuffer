@@ -1,0 +1,45 @@
+name: CI
+
+# Gate for BillBuffer: verify on GitHub-hosted runners the same checks that
+# pass locally, so every PR into main and every push to main is continuously
+# verified before code lands. Hosted runners only — no self-hosted, no vault.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: CI only needs to read the repo.
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check (svelte-check)
+        run: npm run check
+
+      - name: Test (vitest run)
+        run: npm run test
+
+      - name: Build (adapter-static)
+        run: npm run build
