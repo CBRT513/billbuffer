@@ -1,5 +1,24 @@
 # BillBuffer Open Questions
 
+> **Reconciled (2026-06-29).** The locked architecture closes several of these.
+> Still-open items (business model, elevator pitch, acquisition, success metrics)
+> remain product/marketing questions and are unaffected.
+>
+> **Now resolved / out of scope (do not reopen without changing the guardrails):**
+> - **§2 Credit-card handling** → resolved: revolving debt is an ordinary monthly
+>   bill, ongoing by default, with an optional informational payoff explorer and an
+>   explicit opt-in "stop when paid off." See `CALCULATION_ENGINE_SPEC.md` §8.
+> - **§5 Calculations / proration / pay-period alignment** → resolved: smallest
+>   fixed transfer over a 36-month simulation (not proration). Pay = weekly /
+>   biweekly / monthly only; "paid on the 1st and 15th" (twice-monthly) is **not
+>   supported**. See `CALCULATION_ENGINE_SPEC.md`.
+> - **§1 / §8 Cloud backup, multi-device sync, conflict resolution, "premium
+>   cloud/export" tiers** → **out of MVP scope** per `ARCHITECTURE_GUARDRAILS.md`
+>   (no backend, no accounts). Export/import is local-only and **free/in-MVP**, not
+>   a premium or future feature.
+> - **§5 Data structure / migration** → addressed: IndexedDB with a stored schema
+>   version. See `PRODUCTION_IMPLEMENTATION_BRIEF.md` (Storage rules).
+
 ## 1. Business Model Specifics
 
 **Current Decision:** Freemium model

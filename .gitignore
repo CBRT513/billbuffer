@@ -1,38 +1,61 @@
-# Dependencies
+# === BillBuffer repo hygiene ===
+# This repo is documentation-only today. These rules guard the privacy promise:
+# nothing personal, and no disposable prototype code, may be committed.
+
+# --- Personal / disposable prototype (NEVER commit) ---
+# The prototype is a disposable UX + calculation test model that embedded personal
+# seed data (real bills, balances, APRs). It is local-only by design.
+billbuffer-prototype.html
+billbuffer-prototype-notes.md
+*prototype*.html
+
+# --- User data exports / backups / seeds (may contain personal financial data) ---
+*seed*.json
+*backup*.json
+billbuffer-backup.json
+*-backup.json
+*.seed.json
+*.local.json
+exports/
+backups/
+user_data/
+
+# --- Dependencies ---
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment variables
+# --- Environment variables ---
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
 
-# IDE
+# --- IDE / OS junk ---
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
+Thumbs.db
 
-# Build outputs
+# --- Build outputs (for when production starts) ---
+.svelte-kit/
 dist/
 build/
 *.log
-
-# Local development
-*.local
 .cache/
+.vercel/
+.netlify/
 
-# Security - Never commit these
+# --- Security — never commit these ---
 *.key
 *.pem
 *.p12
 *.pfx
 secrets/
 
-# User data - Never commit
-user_data/
-backups/
-exports/
+# --- Local development ---
+*.local

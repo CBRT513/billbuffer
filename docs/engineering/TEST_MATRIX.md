@@ -1,0 +1,139 @@
+# BillBuffer — Test Matrix
+
+**Status:** Required coverage for the production engine + validation layers.
+**Updated:** 2026-06-29
+
+These tests are written against `CALCULATION_ENGINE_SPEC.md`. The engine and
+validators must pass all of them **before any UI is wired** (Phase 3–4 of the
+implementation brief). Test cases set "today" via the **test-harness-only** date
+override — it lives in harness code/data, never in the data model, never in
+persisted or imported user data, and no UI control ships for it. (Imports carrying
+`testToday` are rejected — see F14.)
+
+> **Fixture note:** the regression anchor is **Fixture A**, a synthetic,
+> non-personal scenario defined in `CALCULATION_ENGINE_SPEC.md` §13. All names and
+> numbers are invented. No personal financial data is used or committed anywhere in
+> this repo.
+
+---
+
+## A. Engine — correctness
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| A1 | **Fixture A — fixed-transfer regression scenario** | the synthetic fixture in `CALCULATION_ENGINE_SPEC.md` §13 (today 2030-01-01, $1,500 biweekly, start $0, cushion $0) | 79 paychecks; exact transfer $663.13 → **$664** into bills, **$836** yours; **$45** starting catch-up; lowest **$0** on **2030-01-02**; not impossible |
+| A2 | **Zero bills** | valid paycheck, no bills | `X = 0`; yours = full paycheck; no catch-up; not impossible; "Why this amount?" hidden / empty-state copy shown |
+| A3 | **Exact-dollar plan** | inputs that make the exact transfer land on a whole dollar | engine returns exactly that dollar (no float-ceil drift, no phantom +$1); bills display = yours + X = paycheck |
+| A4 | **Monthly bill** | one $100 monthly bill | recurs every month from due date across horizon; transfer covers it with cushion held |
+| A5 | **Quarterly bill** | one bill, freq = quarterly | recurs every 3 months from due date; transfer smooths the lumpy outflow over paychecks |
+| A6 | **Annual bill** | one bill, freq = annual | recurs every 12 months; ~3 occurrences in 36 months; transfer pre-funds it |
+| A7 | **Weekly paycheck** | freq = weekly | paydays at +7-day steps from next payday, no drift, through horizon |
+| A8 | **Biweekly paycheck** | freq = biweekly | paydays at +14-day steps, no drift |
+| A9 | **Monthly paycheck** | freq = monthly | paydays shifted by whole months with end-of-month clamping |
+
+## B. Dates & recurrence edges
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| B1 | **Jan 31 monthly bill** | monthly bill due 2026-01-31 | occurrences clamp: Feb 28, Mar 31, Apr 30, … — measured from the original 31st each time (no permanent collapse to the 28th) |
+| B2 | **Leap-year date** | bill/paycheck date 2028-02-29 | accepted; recurrence/horizon math handles the leap day correctly |
+| B3 | **Invalid dates rejected** | dates 2026-02-31, 2026-02-29 (non-leap), 2026-13-01, "2026-1-1", "not-a-date" | each rejected by strict round-trip parser; not silently rolled |
+
+## C. Validation — input & rules
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| C1 | **Negative cushion rejected** | cushion = −5 | rejected with clear message; state not saved |
+| C2 | **Missing payday rejected** | paycheck with blank/invalid `next` | rejected; prompt to pick next payday |
+| C3 | **Paycheck amount must be > 0** | amount = 0 or negative or non-finite | rejected |
+| C4 | **Bill amount must be > 0** | bill amount = 0 / negative / NaN | rejected |
+| C5 | **Bill name required** | blank name | rejected |
+| C6 | **Negative revolving-debt balance / APR rejected** | a bill's `balance` = −1 or `apr` = −1 (the amount *owed* on a card) | rejected |
+| C7 | **Negative bills-account balance ACCEPTED** | `billsAccountBalanceToday` = −100 (overdrawn account) | **accepted** and saved; must only be finite — a negative value is **not** rejected. Catch-up/forecast account for the overdraft. (Cushion stays ≥ 0.) |
+| C8 | **Valid next payday but NO paydays in horizon → rejected (live input)** | strictly valid `next` more than 36 months out (e.g. today 2030-01-01, `next` = 2033-06-01), any freq | **rejected** before any simulation/`avg` — the schedule yields 0 paydays in `[today, horizonEnd]`. Message: "Your next payday is too far in the future — pick a date within the next 3 years." No division-by-zero. |
+
+## D. Plan states
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| D1 | **Impossible plan (genuine income shortfall)** | **start balance $0**, cushion $0; bills such that `billsAccountBalanceToday + paychecks × paycheck < totalOutflow` (with $0 balance this is `avg > paycheck`). Concretely: $1,000 **monthly**, one $1,300/month bill, harness today 2030-01-01, next payday 2030-01-15 → 36 paychecks, totalOutflow $46,800, `$0 + $36,000 < $46,800` | `impossible = true`; `X* = $1,300 > paycheck`; Yours shows **$0** (never negative); "Bills need $X" (X = balance-aware sustainable transfer), "Short by $Y each paycheck"; forecast card + "why" hidden |
+| D7 | **Prefunded plan is NOT impossible even though avg > paycheck** | Same as D1 **but `billsAccountBalanceToday` = $20,000** (large prefund). $1,000 monthly, $1,300/month bill, cushion $0, 36 paychecks | **NOT** `impossible`. `avg = $1,300 > $1,000` is only a first signal; balance-aware test passes: `$20,000 + 36×$1,000 = $56,000 ≥ totalOutflow $46,800`. Smallest feasible transfer **`X* = $744.45 ≤ paycheck`** → ≈ **$255** yours each paycheck. Guards against declaring a prefunded user impossible solely because `avg > paycheck`. |
+| D2 | **Same-day ordering: bill before paycheck** | a bill and a payday on the same date, balance tight | bill applied first; if that breaches the cushion, it is reflected (a same-day paycheck does not "rescue" a same-day bill) |
+| D3 | **Starting catch-up — bill before payday #1** | a bill due before payday #1 with start $0 | non-zero `startCatchUp` (rounded up); labels switch to "…after setup"; cause-aware explanation |
+| D4 | **Existing balance covers pre-payday need** | start balance ≥ pre-first-payday outflow | no catch-up; leftover balance slightly lowers `X`; adaptive "why" copy |
+| D5 | **Early underfunding AFTER payday #1 is a timing case, not impossible** | Fully pinned (see fixture below the table) — harness today `2030-01-01`, `$100` **weekly**, next payday `2030-01-08`, start `$0`, cushion `$0`, one `$1,000` **annual** bill due `2030-01-20` (after exactly two paychecks: 01-08 & 01-15, before the 3rd on 01-22). | **NOT** `impossible`. Horizon `[2030-01-01, 2033-01-01]` → **156 weekly paychecks** (first `2030-01-08`, last `2032-12-28`); the annual bill recurs **3×** (`2030-01-20`, `2031-01-20`, `2032-01-20`) so `totalOutflow = $3,000`. `avg = 3000 / 156 = $19.2308/pay ≤ $100` → timing case. Recommended recurring transfer `Xᵣ = ceil($19.2308) = `**`$19.24`** (shown **$20**); startup catch-up `= $961.52` (shown **$962**) brings the lowest point (`-$961.52` on `2030-01-20`) up to the `$0` cushion. Guards against the naïve infinite-transfer catch-up ($0) + binary-searched transfer ($500 > paycheck) → false "impossible". |
+| D5b | **Timing fallback transfer is balance-aware (lower Xᵣ with a starting balance)** | **Same as D5 but `billsAccountBalanceToday` = $500** (harness today `2030-01-01`, $100 weekly, next `2030-01-08`, $1,000 annual due `2030-01-20`, cushion $0 → 156 paychecks, `totalOutflow $3,000`) | `Xᵣ = min($100, ceilToCent((3000 + 0 − 500)/156)) = ceilToCent($16.0256) = `**`$16.03`** — strictly **less than** the $0-balance case's **$19.24** (D5), because the $500 balance is netted out. Startup catch-up `= requiredCatchUpForTransfer($16.03) = $800.82` (shown **$801**), lowest `-$800.82` on `2032-01-20` lifted to the `$0` cushion; yours `= $83.97/pay` (vs $80.76 at $0). Confirms a starting balance lowers the recurring transfer. |
+| D6 | **Partial pre-first-payday coverage** | cushion $0, `billsAccountBalanceToday` = $100, one $250 bill due **before** payday #1 | `preFirstPaydayOutflow` = $250; `availableAboveCushion` = $100; `coveredByCurrentBalance` = **$100** (partial); `preFirstPaydayShortfall` = **$150**. Startup catch-up reflects the **$150** shortfall (not $0, not the full $250); "why" copy says the balance covers part of the bills due before your next payday. |
+
+### D5 fixture (fully dated — reproducible, no anchor ambiguity)
+
+The exact D5 inputs. **The payday count and the expected values depend on these
+anchors** — a different `next` payday shifts the horizon's weekly payday count
+(e.g. `next = 2030-01-01` yields 157, not 156) and changes `avg`, so all three dates
+are pinned:
+
+```json
+{
+  "testToday": "2030-01-01",              // harness date only (never persisted; see §12)
+  "paycheck": { "amount": 100, "freq": "weekly", "next": "2030-01-08",
+                "billsAccountBalanceToday": 0, "cushion": 0 },
+  "bills": [ { "name": "Annual bill", "amount": 1000,
+               "dueDate": "2030-01-20", "freq": "annual", "showPayoff": false } ]
+}
+```
+
+Derivation (all values reproducible from the fixture):
+
+| Quantity | Value |
+|---|---|
+| Horizon | `[2030-01-01, 2033-01-01]` (today + 36 months) |
+| Weekly paychecks in horizon | **156** (first `2030-01-08`, last `2032-12-28`) |
+| Annual-bill occurrences in horizon | **3** — `2030-01-20`, `2031-01-20`, `2032-01-20` |
+| Paychecks landed on/before the bill (`2030-01-20`) | 2 (`01-08`, `01-15`) |
+| `totalOutflow` | `3 × $1,000 = $3,000` |
+| `avg = totalOutflow / paychecks` | `3000 / 156 = $19.2308…` (affordability signal; ≤ $100 ⇒ not impossible) |
+| Recommended recurring transfer `Xᵣ = min(paycheck, ceilToCent((totalOutflow + cushion − billsAccountBalanceToday) / paychecks))` | `ceilToCent((3000 + 0 − 0)/156)` = **$19.24** (displayed **$20**, rounded up). With a starting balance this is **lower** — see **D5b**. |
+| Lowest balance under `Xᵣ` (no catch-up) | `-$961.52` on `2030-01-20` |
+| Startup catch-up `= ceil(cushion − lowest)` | **$961.52** (displayed **$962**, rounded up) |
+| Lowest balance under `Xᵣ` + catch-up | `$0.00` (= cushion) ✓ |
+
+> The annual bill recurs **3×** across the 36-month horizon, so `totalOutflow` is
+> `$3,000` (not `$1,000`) and `avg` is `$19.23`, not `$6.41`.
+
+## E. Revolving debt
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| E1 | **Debt payment ongoing by default** | card bill, `showPayoff = true`, `stopWhenPaid = false` | minimum payment counts as a normal monthly bill for the **entire** horizon; payoff estimate does not alter the forecast |
+| E2 | **Stop-when-paid behavior** | card, `stopWhenPaid = true`, positive balance + APR + payment that pays off | bill contributes exactly `payoffMonths` monthly payments, then drops from the forecast |
+| E3 | **Stop-when-paid, already paid off** | `stopWhenPaid = true`, balance = 0 | generates zero future payments |
+| E4 | **Stop-when-paid, never pays off** | `stopWhenPaid = true`, payment ≤ monthly interest | stays ongoing full horizon; payoff UI reports "never pays off", not a fake date |
+| E5 | **Card forced monthly** | `showPayoff = true` with freq set to quarterly/annual | frequency coerced to monthly on save and on import |
+| E6 | **Stop-when-paid needs a balance** | `showPayoff` + `stopWhenPaid` with blank balance | rejected on save and on import ("use 0 if already paid off") |
+
+## F. Import validation
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| F1 | **Valid round-trip** | export → delete everything → import same file | state restored losslessly |
+| F2 | **Not a BillBuffer file** | random JSON / array / non-object | rejected; current data untouched |
+| F3 | **Bad numbers** | NaN / Infinity / non-positive amounts | rejected with clear message |
+| F4 | **Bad enums** | invalid `freq` (paycheck or bill) | rejected |
+| F5 | **Bad dates** | invalid/impossible dates anywhere in the file | rejected |
+| F6 | **Negative cushion in file** | cushion < 0 | rejected |
+| F7 | **Stop-when-paid + blank balance in file** | as E6 but via import | rejected with the same message |
+| F8 | **Normalization on success** | valid file with untrimmed names, missing apr/cushion, card with non-monthly freq | names trimmed, defaults applied, card coerced monthly, ids assigned |
+| F9 | **Negative bills-account balance in file ACCEPTED** | file with `billsAccountBalanceToday` (legacy `setAside`) = −100 | **accepted** (finite) — must **not** be rejected, unlike negative cushion (F6). Live input allows it, so import must too. |
+| F10 | **Normal bill with NO balance/apr ACCEPTED** | ordinary bill (`showPayoff` false) with `balance`/`apr` fields absent | **accepted**; `balance`/`apr` normalized to 0. Not rejected by the finite check. |
+| F11 | **Normal bill with BLANK balance/apr ACCEPTED** | ordinary bill with `balance: ""` / `apr: ""` (or null) | **accepted**; blanks normalized to 0 before validation. |
+| F12 | **Revolving debt, stop-when-paid, balance 0 ACCEPTED** | `showPayoff` + `stopWhenPaid` true with `balance` = 0 | **accepted** (means already paid off → generates zero future payments). Contrast F7 (blank balance → rejected). |
+| F13 | **Valid next payday but NO paydays in horizon → rejected (import)** | file whose `next` is strictly valid but more than 36 months out (0 paydays in horizon) | **rejected** with the same message as live input (C8), before any simulation/`avg`; current data untouched. |
+| F14 | **Import containing `testToday` → rejected (present at all)** | file that includes a `testToday` field — test **both** a strictly **valid** value (e.g. `"2030-01-01"`) and an **invalid** one (e.g. `"2026-02-31"`) | **rejected in both cases** — `testToday` is prototype/test-harness only and is never accepted or persisted from a user import. Not stripped-and-loaded; current data untouched. |
+
+## G. Privacy / offline (integration)
+
+| # | Test | Setup | Expected |
+|---|------|-------|----------|
+| G1 | **Zero network for user data** | run full flow with network logging | no requests carry user data; works in airplane mode |
+| G2 | **No personal data outside IndexedDB** | inspect storage after use | user data only in IndexedDB; nothing in localStorage/cookies/URL/logs |
+| G3 | **Offline reload** | load once online, then offline | app shell loads and runs offline via service worker |
