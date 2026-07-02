@@ -1,0 +1,9 @@
+# Generated / vendored
+.svelte-kit
+build
+node_modules
+package-lock.json
+
+# Docs are managed separately (frozen baseline) — don't reformat them here
+docs
+README.md
