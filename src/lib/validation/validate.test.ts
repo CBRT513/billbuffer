@@ -277,6 +277,44 @@ describe('live-input validation — C-series specifics', () => {
 	});
 });
 
+describe('revolving-debt frequency validation (P2)', () => {
+	// The monthly coercion for cards must NOT launder a corrupt frequency into a pass:
+	// validate freq first, coerce only a valid value (§8/E5).
+	function card(freq: unknown) {
+		const bill: Record<string, unknown> = {
+			id: 'c',
+			name: 'Card',
+			amount: 30,
+			dueDate: '2030-01-10',
+			showPayoff: true,
+			balance: 400,
+			apr: 24,
+			stopWhenPaid: false
+		};
+		if (freq !== undefined) bill.freq = freq;
+		return { bills: [bill] };
+	}
+
+	it('showPayoff + invalid freq ("weekly") is rejected', () => {
+		expect(reject(card('weekly')).join(' ')).toContain('frequency');
+	});
+
+	it('showPayoff + missing freq is rejected', () => {
+		expect(reject(card(undefined)).join(' ')).toContain('frequency');
+	});
+
+	it('showPayoff + valid non-monthly freq is accepted and normalized to monthly', () => {
+		expect(accept(card('quarterly')).bills[0].freq).toBe('monthly');
+		expect(accept(card('annual')).bills[0].freq).toBe('monthly');
+	});
+
+	it('non-card invalid freq is still rejected', () => {
+		const f = validFile();
+		f.bills[1].freq = 'weekly'; // showPayoff false
+		reject(f);
+	});
+});
+
 describe('accepted edge cases', () => {
 	it('accepts a valid leap-year date (2028-02-29)', () => {
 		const f = validFile();

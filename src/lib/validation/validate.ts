@@ -209,11 +209,12 @@ function validateBill(raw: unknown, index: number, errors: string[]): Bill {
 	const showPayoff = raw.showPayoff === true;
 	const stopWhenPaid = showPayoff && raw.stopWhenPaid === true;
 
+	// Validate the incoming frequency FIRST — a missing/garbage value is rejected even
+	// for a card. Only a VALID frequency is then coerced to monthly for revolving debt
+	// (§8/E5); coercion must never launder a corrupt value into a pass.
 	let freq: BillFreq = 'monthly';
-	if (showPayoff) {
-		freq = 'monthly'; // coerced regardless of the stored value (E5)
-	} else if (isBillFreq(raw.freq)) {
-		freq = raw.freq;
+	if (isBillFreq(raw.freq)) {
+		freq = showPayoff ? 'monthly' : raw.freq;
 	} else {
 		errors.push(`${who} frequency must be monthly, quarterly, or annual.`);
 	}
