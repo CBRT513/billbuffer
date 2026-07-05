@@ -18,6 +18,18 @@ async function installAndControl(page: Page) {
 
 const home = (page: Page) => page.getByRole('heading', { name: 'BillBuffer' });
 
+// Every pathname currently held in Cache Storage, across all caches.
+async function cachedPaths(page: Page): Promise<string[]> {
+	return page.evaluate(async () => {
+		const paths: string[] = [];
+		for (const name of await caches.keys()) {
+			const cache = await caches.open(name);
+			for (const req of await cache.keys()) paths.push(new URL(req.url).pathname);
+		}
+		return paths.sort();
+	});
+}
+
 test.describe('PWA offline smoke', () => {
 	test('the built app loads online and registers a service worker', async ({ page }) => {
 		await page.goto('/');
@@ -55,68 +67,59 @@ test.describe('PWA offline smoke', () => {
 		expect(response!.headers()['content-type'] ?? '').toContain('text/html');
 	});
 
-	test('the service worker caches only app-shell/static assets, never user data', async ({
-		page
-	}) => {
+	test('the offline cache holds only the app shell and static assets', async ({ page }) => {
 		await installAndControl(page);
 
-		const cache = await page.evaluate(async () => {
-			const names = await caches.keys();
-			const paths: string[] = [];
-			for (const name of names) {
-				const c = await caches.open(name);
-				for (const req of await c.keys()) paths.push(new URL(req.url).pathname);
-			}
-			return { names, paths };
-		});
+		const names = await page.evaluate(() => caches.keys());
+		expect(names.length).toBeGreaterThan(0);
+		expect(names.every((n) => n.startsWith('billbuffer-'))).toBe(true);
 
-		// Only our versioned shell cache exists, and it holds the SPA entry shell.
-		expect(cache.names.length).toBeGreaterThan(0);
-		expect(cache.names.every((n) => n.startsWith('billbuffer-'))).toBe(true);
-		expect(cache.paths).toContain('/');
-
-		// Every cached entry is a static asset or the shell — no dynamic/user-data path.
+		const paths = await cachedPaths(page);
+		expect(paths).toContain('/'); // SPA shell, so an offline launch works
 		const looksStatic = (p: string) =>
 			p === '/' ||
 			p.startsWith('/_app/') ||
 			/\.(js|css|svg|png|ico|json|webmanifest|woff2?|txt|html)$/.test(p);
-		expect(cache.paths.filter((p) => !looksStatic(p))).toEqual([]);
+		expect(paths.filter((p) => !looksStatic(p))).toEqual([]);
+	});
 
-		// Concretely prove the promise: user data written to IndexedDB never leaks into
-		// Cache Storage (they are separate stores; the SW only ever caches static assets).
-		await page.evaluate(
-			() =>
-				new Promise<void>((resolve, reject) => {
-					const open = indexedDB.open('billbuffer', 1);
-					open.onupgradeneeded = () => {
-						if (!open.result.objectStoreNames.contains('appdata')) {
-							open.result.createObjectStore('appdata');
-						}
-					};
-					open.onsuccess = () => {
-						const db = open.result;
-						const tx = db.transaction('appdata', 'readwrite');
-						tx.objectStore('appdata').put({ secret: 'USER-FINANCIAL-DATA' }, 'current');
-						tx.oncomplete = () => {
-							db.close();
-							resolve();
-						};
-						tx.onerror = () => reject(tx.error);
-					};
-					open.onerror = () => reject(open.error);
-				})
+	test('the service worker never runtime-caches a dynamic response (no user data can reach Cache Storage)', async ({
+		page,
+		context
+	}) => {
+		await installAndControl(page);
+
+		// A dynamic, non-static endpoint returning a user-data-shaped 200 body, fulfilled
+		// by the test. Fetching it FROM the controlled page drives it through the SW's
+		// fetch handler — the exact path that must never write to Cache Storage. (The
+		// earlier IndexedDB approach never touched the SW, so it proved nothing here.)
+		const MARKER = 'USER-FINANCIAL-DATA-9c3f';
+		const PROBE = '/__probe/user-data.json';
+		await context.route(`**${PROBE}`, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ secret: MARKER })
+			})
 		);
 
-		const leaked = await page.evaluate(async () => {
+		const before = await cachedPaths(page);
+
+		const body = await page.evaluate((url) => fetch(url).then((r) => r.text()), PROBE);
+		expect(body, 'the probe really returned the marker through the SW').toContain(MARKER);
+
+		// The dynamic 200 was written to NO cache, and no cached body contains the marker.
+		expect(await cachedPaths(page)).toEqual(before);
+		const leaked = await page.evaluate(async (marker) => {
 			for (const name of await caches.keys()) {
-				const c = await caches.open(name);
-				for (const req of await c.keys()) {
-					const res = await c.match(req);
-					if (res && (await res.text()).includes('USER-FINANCIAL-DATA')) return true;
+				const cache = await caches.open(name);
+				for (const req of await cache.keys()) {
+					const res = await cache.match(req);
+					if (res && (await res.text()).includes(marker)) return true;
 				}
 			}
 			return false;
-		});
+		}, MARKER);
 		expect(leaked).toBe(false);
 	});
 });
