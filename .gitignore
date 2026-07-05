@@ -50,6 +50,11 @@ build/
 .vercel/
 .netlify/
 
+# --- Playwright (e2e) artifacts ---
+test-results/
+playwright-report/
+playwright/.cache/
+
 # --- Security — never commit these ---
 *.key
 *.pem

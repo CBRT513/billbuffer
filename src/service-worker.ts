@@ -60,18 +60,12 @@ sw.addEventListener('fetch', (event) => {
 			}
 		}
 
-		// Everything else: try the network, fall back to cache when offline.
-		try {
-			const response = await fetch(event.request);
-			if (response.status === 200) {
-				cache.put(event.request, response.clone());
-			}
-			return response;
-		} catch {
-			const cached = await cache.match(event.request);
-			if (cached) return cached;
-			throw new Error('offline and not cached');
-		}
+		// Everything else: pass straight through to the network. We deliberately do
+		// NOT runtime-cache arbitrary responses — the cache only ever holds the
+		// precached app shell + static assets (handled above), so no response derived
+		// from user data can ever be written into Cache Storage. Everything the app
+		// needs offline is already precached, so there is nothing to runtime-cache.
+		return fetch(event.request);
 	}
 
 	event.respondWith(respond());
