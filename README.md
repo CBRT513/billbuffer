@@ -57,6 +57,7 @@ All documentation lives under [`docs/`](./docs/), organized by tier. See
 | Doc | Purpose |
 |---|---|
 | [`docs/vision/BILLBUFFER_CONSTITUTION.md`](./docs/vision/BILLBUFFER_CONSTITUTION.md) | **Supreme authority.** Purpose, promise, the seven rules, success. |
+| [`docs/vision/BILLBUFFER_NORTH_STAR.md`](./docs/vision/BILLBUFFER_NORTH_STAR.md) | What to optimize for when a product decision is open. |
 | [`docs/vision/BILLBUFFER_PHILOSOPHY.md`](./docs/vision/BILLBUFFER_PHILOSOPHY.md) | Core beliefs, the "NOT list", and the banned-word dictionary. |
 
 **Product** — who it's for and what v1 is

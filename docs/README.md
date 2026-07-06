@@ -18,7 +18,7 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 
 | Tier | Folder | Contains |
 |---|---|---|
-| **Vision** | [`vision/`](./vision/) | Why BillBuffer exists — the Constitution (supreme) and Philosophy. |
+| **Vision** | [`vision/`](./vision/) | Why BillBuffer exists — the Constitution (supreme), the North Star, and Philosophy. |
 | **Product** | [`product/`](./product/) | Who it's for and what v1 is — privacy manifesto, MVP definition, personas, open questions. |
 | **Architecture** | [`architecture/`](./architecture/) | The non-negotiable technical rules — guardrails and stack. |
 | **Engineering** | [`engineering/`](./engineering/) | How to build it — implementation brief, calculation spec, test matrix. |
@@ -28,6 +28,7 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 
 ### Vision
 - [`vision/BILLBUFFER_CONSTITUTION.md`](./vision/BILLBUFFER_CONSTITUTION.md) — **supreme authority**
+- [`vision/BILLBUFFER_NORTH_STAR.md`](./vision/BILLBUFFER_NORTH_STAR.md) — what to optimize for when a product decision is open
 - [`vision/BILLBUFFER_PHILOSOPHY.md`](./vision/BILLBUFFER_PHILOSOPHY.md)
 
 ### Product
