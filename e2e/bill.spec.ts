@@ -87,7 +87,7 @@ test.describe('Add / edit / delete bill', () => {
 	test('edits an existing bill and persists the change', async ({ page }) => {
 		await page.goto('/');
 		await seed(page, { onboarded: false, paycheck: null, bills: [billRent()] });
-		await page.goto('/bill/rent');
+		await page.goto('/bill/edit/rent');
 
 		await expect(page.getByTestId('name')).toHaveValue('Rent');
 		await expect(page.getByTestId('amount')).toHaveValue('900');
@@ -105,7 +105,7 @@ test.describe('Add / edit / delete bill', () => {
 	test('deletes a bill after explicit confirmation', async ({ page }) => {
 		await page.goto('/');
 		await seed(page, { onboarded: false, paycheck: null, bills: [billRent()] });
-		await page.goto('/bill/rent');
+		await page.goto('/bill/edit/rent');
 
 		await page.getByTestId('delete').click();
 		await expect(page.getByTestId('delete-confirm')).toBeVisible();
@@ -129,7 +129,7 @@ test.describe('Add / edit / delete bill', () => {
 			},
 			bills: [billRent()]
 		});
-		await page.goto('/bill/rent');
+		await page.goto('/bill/edit/rent');
 		await page.getByTestId('amount').fill('950');
 		await saveEdit(page);
 		await expect(page.getByTestId('status')).toContainText('saved');
@@ -146,7 +146,7 @@ test.describe('Add / edit / delete bill', () => {
 			paycheck: null,
 			bills: [billRent(), billRent({ id: 'car', name: 'Car' })]
 		});
-		await page.goto('/bill/rent');
+		await page.goto('/bill/edit/rent');
 		await page.getByTestId('amount').fill('950');
 		await saveEdit(page);
 		await expect(page.getByTestId('status')).toContainText('saved');

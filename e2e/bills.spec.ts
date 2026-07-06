@@ -78,8 +78,26 @@ test.describe('Bills list screen', () => {
 
 		await page.getByTestId('bill-row').click();
 
-		await expect(page).toHaveURL(/\/bill\/rent$/);
+		await expect(page).toHaveURL(/\/bill\/edit\/rent$/);
 		await expect(page.getByTestId('name')).toHaveValue('Rent');
+	});
+
+	test('a bill whose id is "new" opens the EDIT page, not the create page', async ({ page }) => {
+		// /bill/[id] would be shadowed by the static /bill/new create route; the edit
+		// route lives at /bill/edit/[id] so id "new" resolves to editing that bill.
+		await page.goto('/');
+		await seed(page, {
+			onboarded: false,
+			paycheck: null,
+			bills: [billRent({ id: 'new', name: 'Tricky' })]
+		});
+		await page.goto('/bills');
+
+		await page.getByTestId('bill-row').click();
+
+		await expect(page).toHaveURL(/\/bill\/edit\/new$/);
+		await expect(page.getByRole('heading', { name: 'Edit bill' })).toBeVisible();
+		await expect(page.getByTestId('name')).toHaveValue('Tricky');
 	});
 
 	test('the add-bill link opens the new-bill editor', async ({ page }) => {
@@ -133,10 +151,11 @@ test.describe('Bills list screen', () => {
 		expect(offOrigin, 'the app made off-origin requests').toEqual([]);
 	});
 
-	// Imported/legacy ids may legally contain reserved URL characters. The list must
-	// encode them into the link and the [id] route must decode back to the exact id, so
-	// clicking the row opens and edits the CORRECT bill (never a routing mismatch).
-	for (const id of ['rent/2026', 'foo?bar', 'abc#123', 'a%b']) {
+	// Imported/legacy ids may collide with a route name ("new") or contain reserved URL
+	// characters. The edit route (/bill/edit/[id]) + encodeURIComponent keep them distinct,
+	// and the id round-trips exactly, so clicking a row opens and edits the CORRECT bill —
+	// a plain edit updates that same bill (one row, no duplicate).
+	for (const id of ['new', 'rent/2026', 'foo?bar', 'abc#123', 'a%b']) {
 		test(`round-trips a bill id containing reserved characters: ${JSON.stringify(id)}`, async ({
 			page
 		}) => {
