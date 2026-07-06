@@ -67,6 +67,35 @@ test.describe('PWA offline smoke', () => {
 		expect(response!.headers()['content-type'] ?? '').toContain('text/html');
 	});
 
+	test('offline, /trust serves the real prerendered Trust document (not the SPA shell)', async ({
+		page,
+		context
+	}) => {
+		await installAndControl(page);
+
+		// Visit online, then go fully offline and reload the same URL.
+		await page.goto('/trust');
+		await expect(page.getByRole('heading', { name: 'Why you can trust BillBuffer' })).toBeVisible();
+
+		await context.setOffline(true);
+		const response = await page.reload();
+
+		expect(response, 'offline navigation returned a response').toBeTruthy();
+		expect(response!.ok()).toBe(true);
+
+		// The served bytes are the actual prerendered Trust HTML — its content is baked into
+		// the document. The SPA shell contains none of this, so this proves /trust was NOT
+		// replaced by the shell fallback.
+		const body = await response!.text();
+		expect(body).toContain('Why you can trust BillBuffer');
+		expect(body).toContain('Made by Equilibrium Labs LLC');
+		expect(body).toContain('feedback@billbuffer.app');
+
+		// And it renders offline (static HTML + cached CSS, no JavaScript).
+		await expect(page.getByRole('heading', { name: 'Why you can trust BillBuffer' })).toBeVisible();
+		await expect(page.getByTestId('trust')).toContainText('Everything stays on your device');
+	});
+
 	test('the offline cache holds only the app shell and static assets', async ({ page }) => {
 		await installAndControl(page);
 
@@ -78,6 +107,7 @@ test.describe('PWA offline smoke', () => {
 		expect(paths).toContain('/'); // SPA shell, so an offline launch works
 		const looksStatic = (p: string) =>
 			p === '/' ||
+			p === '/trust' || // prerendered public document — static HTML, never user data
 			p.startsWith('/_app/') ||
 			/\.(js|css|svg|png|ico|json|webmanifest|woff2?|txt|html)$/.test(p);
 		expect(paths.filter((p) => !looksStatic(p))).toEqual([]);
