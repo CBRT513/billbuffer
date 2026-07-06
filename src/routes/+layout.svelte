@@ -10,6 +10,7 @@
 	<a class="brand" href="/">BillBuffer</a>
 	<nav>
 		<a href="/paycheck">Paycheck</a>
+		<a href="/bills">Bills</a>
 		<a href="/bill/new">Add a bill</a>
 		<a href="/privacy">Privacy &amp; your data</a>
 	</nav>
