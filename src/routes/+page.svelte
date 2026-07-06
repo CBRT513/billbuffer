@@ -17,11 +17,54 @@
 	let result = $state<ForecastResult | null>(null);
 	let engineError = $state(false);
 
-	onMount(async () => {
+	// The local day the current forecast was computed for. If the calendar day rolls
+	// over while the app stays open (or is resumed / refocused / made visible again), we
+	// recompute so the plan never shows a stale "today".
+	let lastToday = '';
+	let midnightTimer: ReturnType<typeof setTimeout> | undefined;
+
+	const onVisible = () => {
+		if (document.visibilityState === 'visible') void maybeRecompute();
+	};
+	const onFocus = () => void maybeRecompute();
+
+	onMount(() => {
+		void init();
+		document.addEventListener('visibilitychange', onVisible);
+		window.addEventListener('focus', onFocus);
+		scheduleMidnight();
+		return () => {
+			document.removeEventListener('visibilitychange', onVisible);
+			window.removeEventListener('focus', onFocus);
+			if (midnightTimer) clearTimeout(midnightTimer);
+		};
+	});
+
+	async function init() {
 		data = await loadAppData();
 		compute();
 		loading = false;
-	});
+	}
+
+	// Cheap string compare on every focus/visibility tick; only reloads + recomputes when
+	// the local day actually changed (also picks up data edited in another tab).
+	async function maybeRecompute() {
+		if (localTodayIso() === lastToday) return;
+		data = await loadAppData();
+		compute();
+	}
+
+	// Fire just after the next local midnight, then reschedule — covers the app being
+	// left open across midnight (visibility/focus handle resume-from-background).
+	function scheduleMidnight() {
+		if (midnightTimer) clearTimeout(midnightTimer);
+		const now = new Date();
+		const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2);
+		midnightTimer = setTimeout(() => {
+			void maybeRecompute();
+			scheduleMidnight();
+		}, nextMidnight.getTime() - now.getTime());
+	}
 
 	function localTodayIso(): string {
 		const d = new Date();
@@ -33,12 +76,13 @@
 	function compute() {
 		result = null;
 		engineError = false;
+		lastToday = localTodayIso();
 		// Only forecast a real plan (a paycheck AND at least one bill). Stored data is
 		// already validated, but guard so a surprising edge (e.g. an out-of-horizon date)
 		// never white-screens the home page.
 		if (data.paycheck && data.bills.length > 0) {
 			try {
-				result = forecast({ paycheck: data.paycheck, bills: data.bills }, localTodayIso());
+				result = forecast({ paycheck: data.paycheck, bills: data.bills }, lastToday);
 			} catch {
 				engineError = true;
 			}

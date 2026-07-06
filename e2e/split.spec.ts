@@ -82,6 +82,24 @@ const fixtureA = {
 	]
 };
 
+// A day-sensitive plan: the annual bill due 2030-01-01 lands before the first payday
+// (so a catch-up is required) ONLY while "today" is 2030-01-01. On 2030-01-02 that
+// occurrence has fallen out of the horizon window, so the catch-up disappears — a clean
+// signal that the forecast recomputed for the new day.
+const dayEdgeScenario = {
+	onboarded: true,
+	paycheck: {
+		amount: 1000,
+		freq: 'monthly',
+		next: '2030-01-15',
+		billsAccountBalanceToday: 0,
+		cushion: 0
+	},
+	bills: [
+		bill({ id: 'reg', name: 'Registration', amount: 3600, dueDate: '2030-01-01', freq: 'annual' })
+	]
+};
+
 test.describe('Split / home screen', () => {
 	test('shows the no-paycheck empty state linking to /paycheck', async ({ page }) => {
 		await page.goto('/');
@@ -223,5 +241,39 @@ test.describe('Split / home screen', () => {
 		await expect(page.getByTestId('split')).toBeVisible();
 
 		expect(offOrigin, 'the app made off-origin requests').toEqual([]);
+	});
+
+	test('recomputes when the local day changes on tab visibility, without a full reload', async ({
+		page
+	}) => {
+		await loadHomeAt(page, '2030-01-01', dayEdgeScenario);
+		await expect(page.getByTestId('catchup')).toBeVisible(); // early bill on 2030-01-01
+
+		// A marker that a full reload would wipe — proves we recompute in place.
+		await page.evaluate(() => ((window as unknown as { __kept: boolean }).__kept = true));
+
+		// Cross local midnight into the next day, then signal the tab is visible again.
+		await page.clock.setFixedTime(new Date('2030-01-02T12:00:00Z'));
+		await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+		// The early bill has fallen out of the window → the catch-up is gone.
+		await expect(page.getByTestId('catchup')).toHaveCount(0);
+		await expect(page.getByTestId('split')).toBeVisible();
+		expect(await page.evaluate(() => (window as unknown as { __kept?: boolean }).__kept)).toBe(
+			true
+		);
+	});
+
+	test('recomputes across local midnight while the app is left open (timer)', async ({ page }) => {
+		await page.clock.install({ time: new Date('2030-01-01T23:59:40Z') });
+		await page.goto('/');
+		await seed(page, dayEdgeScenario);
+		await page.goto('/');
+		await expect(page.getByTestId('catchup')).toBeVisible();
+
+		await page.clock.fastForward('00:01:00'); // cross midnight → the midnight timer fires
+
+		await expect(page.getByTestId('catchup')).toHaveCount(0);
+		await expect(page.getByTestId('split')).toBeVisible();
 	});
 });
