@@ -8,7 +8,10 @@
 
 <header class="app-header">
 	<a class="brand" href="/">BillBuffer</a>
-	<nav><a href="/privacy">Privacy &amp; your data</a></nav>
+	<nav>
+		<a href="/paycheck">Paycheck</a>
+		<a href="/privacy">Privacy &amp; your data</a>
+	</nav>
 </header>
 
 {@render children()}
@@ -30,6 +33,11 @@
 		letter-spacing: -0.3px;
 		color: #2b3a36;
 		text-decoration: none;
+	}
+
+	nav {
+		display: flex;
+		gap: 0.9rem;
 	}
 
 	nav a {
