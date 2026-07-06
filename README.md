@@ -80,6 +80,7 @@ All documentation lives under [`docs/`](./docs/), organized by tier. See
 | [`docs/engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md`](./docs/engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md) | Product goal, stack, screens, data model, phases, acceptance criteria. |
 | [`docs/engineering/CALCULATION_ENGINE_SPEC.md`](./docs/engineering/CALCULATION_ENGINE_SPEC.md) | The fixed-transfer forecast engine (+ Fixture A regression anchor). |
 | [`docs/engineering/TEST_MATRIX.md`](./docs/engineering/TEST_MATRIX.md) | Required test coverage for the engine + validators. |
+| [`docs/engineering/PR_VETTING_DOCTRINE.md`](./docs/engineering/PR_VETTING_DOCTRINE.md) | How BillBuffer protects its promises, and how pull requests are vetted. |
 
 **History / superseded** — [`docs/history/`](./docs/history/)
 Archive for retired or superseded documents. Nothing is deleted; superseded content
