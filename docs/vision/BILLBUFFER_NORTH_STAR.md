@@ -6,6 +6,8 @@
 > page is the compass for the space they leave open: **when a product decision is
 > genuinely up to you, this is what to optimize for.**
 
+**When two valid product decisions compete, the North Star decides which one wins.**
+
 ## Optimize for one thing
 
 **A person's confidence in a single moment — _"Can I safely spend this right now?"_**
@@ -33,6 +35,12 @@ An option that adds capability but loses on any of these is the wrong option.
 - **Clarity over completeness.** A simpler answer someone trusts beats a fuller one they don't.
 - **Trust over speed.** Honestly slower beats confidently wrong.
 - **Calm over cleverness.** If a smarter-looking answer raises anxiety, it isn't smarter.
+
+## One principle that never bends
+
+**BillBuffer never confidently answers with incomplete information.** When the inputs
+aren't there yet, say so plainly and show the way to complete them — never present a
+half-answer as the answer.
 
 ## Scope
 
