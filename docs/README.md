@@ -8,26 +8,36 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 
 ## Required reading order
 
+**Before product / architecture decisions:**
+
 1. [`vision/BILLBUFFER_CONSTITUTION.md`](./vision/BILLBUFFER_CONSTITUTION.md)
-2. [`architecture/ARCHITECTURE_GUARDRAILS.md`](./architecture/ARCHITECTURE_GUARDRAILS.md)
-3. [`engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md`](./engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md)
-4. [`engineering/CALCULATION_ENGINE_SPEC.md`](./engineering/CALCULATION_ENGINE_SPEC.md)
-5. [`engineering/TEST_MATRIX.md`](./engineering/TEST_MATRIX.md)
+2. [`vision/BILLBUFFER_NORTH_STAR.md`](./vision/BILLBUFFER_NORTH_STAR.md)
+3. [`vision/BILLBUFFER_PHILOSOPHY.md`](./vision/BILLBUFFER_PHILOSOPHY.md)
+4. [`architecture/ARCHITECTURE_GUARDRAILS.md`](./architecture/ARCHITECTURE_GUARDRAILS.md)
+5. [`engineering/PR_VETTING_DOCTRINE.md`](./engineering/PR_VETTING_DOCTRINE.md)
+
+**Before implementation / code changes** — everything above, plus:
+
+1. [`engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md`](./engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md)
+2. [`engineering/CALCULATION_ENGINE_SPEC.md`](./engineering/CALCULATION_ENGINE_SPEC.md)
+3. [`engineering/TEST_MATRIX.md`](./engineering/TEST_MATRIX.md)
+4. Any directly relevant screen/feature doc for the change at hand.
 
 ## Tiers
 
 | Tier | Folder | Contains |
 |---|---|---|
-| **Vision** | [`vision/`](./vision/) | Why BillBuffer exists — the Constitution (supreme) and Philosophy. |
+| **Vision** | [`vision/`](./vision/) | Why BillBuffer exists — the Constitution (supreme), the North Star, and Philosophy. |
 | **Product** | [`product/`](./product/) | Who it's for and what v1 is — privacy manifesto, MVP definition, personas, open questions. |
 | **Architecture** | [`architecture/`](./architecture/) | The non-negotiable technical rules — guardrails and stack. |
-| **Engineering** | [`engineering/`](./engineering/) | How to build it — implementation brief, calculation spec, test matrix. |
+| **Engineering** | [`engineering/`](./engineering/) | How to build it — implementation brief, calculation spec, test matrix, and the PR-vetting doctrine. |
 | **History** | [`history/`](./history/) | Retired / superseded documents. Nothing is deleted. Empty today. |
 
 ## Full index
 
 ### Vision
 - [`vision/BILLBUFFER_CONSTITUTION.md`](./vision/BILLBUFFER_CONSTITUTION.md) — **supreme authority**
+- [`vision/BILLBUFFER_NORTH_STAR.md`](./vision/BILLBUFFER_NORTH_STAR.md) — what to optimize for when a product decision is open
 - [`vision/BILLBUFFER_PHILOSOPHY.md`](./vision/BILLBUFFER_PHILOSOPHY.md)
 
 ### Product
@@ -44,6 +54,7 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 - [`engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md`](./engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md)
 - [`engineering/CALCULATION_ENGINE_SPEC.md`](./engineering/CALCULATION_ENGINE_SPEC.md)
 - [`engineering/TEST_MATRIX.md`](./engineering/TEST_MATRIX.md)
+- [`engineering/PR_VETTING_DOCTRINE.md`](./engineering/PR_VETTING_DOCTRINE.md)
 
 ### History
 - [`history/`](./history/) — archive (see [`history/README.md`](./history/README.md))
