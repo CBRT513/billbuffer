@@ -10,6 +10,7 @@
 	// existing storage/import-export/validator modules. No account, no network.
 
 	let data = $state<AppData>(emptyAppData());
+	let loading = $state(true); // true until the first IndexedDB load resolves
 	let importErrors = $state<string[]>([]);
 	let status = $state('');
 	let confirmingDelete = $state(false);
@@ -19,6 +20,7 @@
 
 	async function refresh() {
 		data = await loadAppData();
+		loading = false;
 	}
 
 	// The impure clock boundary: the engine/validator take "today" as input; here (the
@@ -30,9 +32,13 @@
 		return `${d.getFullYear()}-${mm}-${dd}`;
 	}
 
-	function onExport() {
+	async function onExport() {
 		status = '';
 		importErrors = [];
+		// Defensive: always export freshly-loaded IndexedDB data, never the possibly
+		// still-initial placeholder in component state. The `loading` gate below also
+		// disables the button until the first load resolves.
+		data = await loadAppData();
 		downloadBackup(data);
 	}
 
@@ -85,7 +91,7 @@
 	<section aria-label="Your data controls" class="controls">
 		<h2>Your data</h2>
 
-		<button type="button" onclick={onExport}>Export backup</button>
+		<button type="button" onclick={onExport} disabled={loading}>Export backup</button>
 
 		<button type="button" onclick={() => fileInput?.click()}>Import backup</button>
 		<input

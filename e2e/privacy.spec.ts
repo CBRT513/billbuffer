@@ -119,6 +119,27 @@ test.describe('Privacy / Trust screen', () => {
 		expect(content).not.toContain('testToday');
 	});
 
+	test('exports preexisting stored data even when Export is triggered immediately after load', async ({
+		page
+	}) => {
+		// Seed two bills through the real import path, then reload so the component
+		// remounts with the initial emptyAppData placeholder and an async IndexedDB load.
+		await page.goto('/privacy');
+		await upload(page, validBackup);
+		await expect(page.getByTestId('held-bills')).toHaveText('Bills: 2');
+		await page.reload();
+
+		// Export as the very FIRST action after reload — no waiting for the summary.
+		// The button stays disabled until the initial load resolves and onExport reloads
+		// fresh data, so the file must hold the stored 2 bills, never the empty placeholder.
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.getByRole('button', { name: 'Export backup' }).click()
+		]);
+		const parsed = JSON.parse(readFileSync(await download.path(), 'utf8'));
+		expect(parsed.bills).toHaveLength(2);
+	});
+
 	test('an invalid import is rejected and leaves current data untouched', async ({ page }) => {
 		await page.goto('/privacy');
 		await upload(page, validBackup);
