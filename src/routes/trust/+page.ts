@@ -4,3 +4,6 @@
 // offline. Pure content — no data, no state, no browser APIs.
 export const prerender = true;
 export const ssr = true;
+// Intentionally static: no client-side JavaScript. The page is plain content, so it
+// ships and runs with zero JS — nothing to hydrate.
+export const csr = false;

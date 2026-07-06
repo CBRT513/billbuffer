@@ -94,14 +94,10 @@
 </main>
 
 <style>
-	/* This public page owns its own background edge-to-edge, so remove the default body
-	   gutter while it is shown. Scoped to this component's lifetime. */
-	:global(body) {
-		margin: 0;
-	}
-
 	/* Visual Direction v1 tokens (light). Kept local to this page: the global visual
-	   language does not exist yet, so the page carries the accepted values itself. */
+	   language does not exist yet, so the page carries the accepted values itself. The
+	   full-bleed background reaches the viewport edges via the app-level body reset
+	   (src/app.css) — this component does not touch <body>. */
 	.trust {
 		--bg: #f4f6f5;
 		--surface: #ffffff;

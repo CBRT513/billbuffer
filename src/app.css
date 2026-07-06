@@ -1,0 +1,9 @@
+/* Application-level styles. Only genuinely global rules belong here. Route components
+   must not mutate <body> from their own scoped styles.
+
+   `body { margin: 0 }` is the one global reset the app relies on: it lets a full-bleed
+   page (e.g. /trust) reach the viewport edges without a default user-agent gutter. It
+   changes no behavior and does not theme anything. */
+body {
+	margin: 0;
+}
