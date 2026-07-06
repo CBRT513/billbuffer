@@ -4,6 +4,7 @@
 	import { emptyAppData } from '$lib/types';
 	import { clearAppData, loadAppData } from '$lib/storage/db';
 	import { downloadBackup, importBackupText, readBackupFile } from '$lib/storage/importExport';
+	import { feedbackMailto } from '$lib/feedback';
 
 	// Privacy / Trust screen (brief §3 screen 6): the plain-language promise plus the
 	// user's data-portability controls — Export, Import, Delete everything — wired to the
@@ -15,6 +16,11 @@
 	let status = $state('');
 	let confirmingDelete = $state(false);
 	let fileInput = $state<HTMLInputElement>();
+
+	// Compile-time version/build stamp (Vite define). Shown on-screen and stamped into the
+	// feedback email so a beta report says which build it came from.
+	const appVersion = `${__APP_VERSION__} (${__APP_BUILD__})`;
+	const feedbackHref = feedbackMailto(appVersion);
 
 	onMount(refresh);
 
@@ -116,6 +122,11 @@
 		{/if}
 	</section>
 
+	<section aria-label="Beta feedback" class="feedback">
+		<a href={feedbackHref} data-testid="feedback-link">Share your thoughts</a>
+		<p class="version" data-testid="app-version">BillBuffer {appVersion}</p>
+	</section>
+
 	{#if status}
 		<p role="status" class="status" data-testid="status">{status}</p>
 	{/if}
@@ -208,5 +219,22 @@
 		border-radius: 10px;
 		padding: 0.5rem 1rem;
 		color: #7a2416;
+	}
+
+	.feedback {
+		display: grid;
+		gap: 0.35rem;
+		justify-items: start;
+	}
+
+	.feedback a {
+		color: #4f7d78;
+		font-weight: 600;
+	}
+
+	.version {
+		margin: 0;
+		color: #5b6b67;
+		font-size: 0.85rem;
 	}
 </style>
