@@ -15,12 +15,17 @@ export function downloadBackup(data: AppData): void {
 	}
 	const blob = new Blob([serializeAppData(data)], { type: 'application/json' });
 	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = BACKUP_FILENAME;
+	a.rel = 'noopener';
+	// Anchor must be connected to the document for the download to fire reliably
+	// across browsers (and to be observable by automation).
+	document.body.appendChild(a);
 	try {
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = BACKUP_FILENAME;
 		a.click();
 	} finally {
+		a.remove();
 		URL.revokeObjectURL(url);
 	}
 }
