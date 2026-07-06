@@ -83,6 +83,19 @@ test.describe('Privacy / Trust screen', () => {
 		).toBeVisible();
 	});
 
+	test('offers a feedback mailto and shows the app version', async ({ page }) => {
+		await page.goto('/privacy');
+
+		const link = page.getByTestId('feedback-link');
+		await expect(link).toHaveText('Share your thoughts');
+		const href = await link.getAttribute('href');
+		expect(href).toMatch(/^mailto:/);
+		expect(href).toContain('subject=BillBuffer%20Feedback');
+		expect(href).toContain('Version%3A');
+
+		await expect(page.getByTestId('app-version')).toContainText('BillBuffer');
+	});
+
 	test('importing a valid backup saves the normalized data', async ({ page }) => {
 		await page.goto('/privacy');
 		await expect(page.getByTestId('held-bills')).toHaveText('Bills: 0');
