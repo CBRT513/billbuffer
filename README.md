@@ -40,13 +40,26 @@ wins.** Every other document below serves it.
 
 ## Start here — required reading order
 
-Read these five, in this order, before contributing anything (human or AI):
+Read in order. The first set is required before any **product or architecture
+decision**; the second is additionally required before any **implementation or code
+change**.
+
+### Before product / architecture decisions
 
 1. [`docs/vision/BILLBUFFER_CONSTITUTION.md`](./docs/vision/BILLBUFFER_CONSTITUTION.md) — the supreme charter: purpose, promise, and the seven rules.
 2. [`docs/vision/BILLBUFFER_NORTH_STAR.md`](./docs/vision/BILLBUFFER_NORTH_STAR.md) — what to optimize for when a product decision is open.
 3. [`docs/vision/BILLBUFFER_PHILOSOPHY.md`](./docs/vision/BILLBUFFER_PHILOSOPHY.md) — core beliefs, the "NOT list", and the banned-word dictionary.
 4. [`docs/architecture/ARCHITECTURE_GUARDRAILS.md`](./docs/architecture/ARCHITECTURE_GUARDRAILS.md) — the non-negotiable technical rules the Constitution implies.
 5. [`docs/engineering/PR_VETTING_DOCTRINE.md`](./docs/engineering/PR_VETTING_DOCTRINE.md) — how BillBuffer protects its promises, and how pull requests are vetted.
+
+### Before implementation / code changes
+
+Everything above still applies. Also read, in order:
+
+1. [`docs/engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md`](./docs/engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md) — product goal, stack, screens, data model, phases, acceptance criteria.
+2. [`docs/engineering/CALCULATION_ENGINE_SPEC.md`](./docs/engineering/CALCULATION_ENGINE_SPEC.md) — the fixed-transfer forecast engine, specified precisely.
+3. [`docs/engineering/TEST_MATRIX.md`](./docs/engineering/TEST_MATRIX.md) — required test coverage for the engine + validators.
+4. Any directly relevant screen/feature doc for the change at hand.
 
 ## Documentation map
 

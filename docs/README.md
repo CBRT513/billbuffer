@@ -8,11 +8,20 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 
 ## Required reading order
 
+**Before product / architecture decisions:**
+
 1. [`vision/BILLBUFFER_CONSTITUTION.md`](./vision/BILLBUFFER_CONSTITUTION.md)
 2. [`vision/BILLBUFFER_NORTH_STAR.md`](./vision/BILLBUFFER_NORTH_STAR.md)
 3. [`vision/BILLBUFFER_PHILOSOPHY.md`](./vision/BILLBUFFER_PHILOSOPHY.md)
 4. [`architecture/ARCHITECTURE_GUARDRAILS.md`](./architecture/ARCHITECTURE_GUARDRAILS.md)
 5. [`engineering/PR_VETTING_DOCTRINE.md`](./engineering/PR_VETTING_DOCTRINE.md)
+
+**Before implementation / code changes** — everything above, plus:
+
+1. [`engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md`](./engineering/PRODUCTION_IMPLEMENTATION_BRIEF.md)
+2. [`engineering/CALCULATION_ENGINE_SPEC.md`](./engineering/CALCULATION_ENGINE_SPEC.md)
+3. [`engineering/TEST_MATRIX.md`](./engineering/TEST_MATRIX.md)
+4. Any directly relevant screen/feature doc for the change at hand.
 
 ## Tiers
 
