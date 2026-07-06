@@ -132,4 +132,35 @@ test.describe('Bills list screen', () => {
 
 		expect(offOrigin, 'the app made off-origin requests').toEqual([]);
 	});
+
+	// Imported/legacy ids may legally contain reserved URL characters. The list must
+	// encode them into the link and the [id] route must decode back to the exact id, so
+	// clicking the row opens and edits the CORRECT bill (never a routing mismatch).
+	for (const id of ['rent/2026', 'foo?bar', 'abc#123', 'a%b']) {
+		test(`round-trips a bill id containing reserved characters: ${JSON.stringify(id)}`, async ({
+			page
+		}) => {
+			await page.goto('/');
+			await seed(page, {
+				onboarded: false,
+				paycheck: null,
+				bills: [billRent({ id, name: 'Special' })]
+			});
+			await page.goto('/bills');
+
+			await page.getByTestId('bill-row').click();
+
+			// The editor opened the right record (decoded id matched the stored bill)…
+			await expect(page.getByTestId('name')).toHaveValue('Special');
+
+			// …and an edit updates THAT bill (id preserved exactly — no duplicate row).
+			await page.getByTestId('amount').fill('123');
+			await page.getByRole('button', { name: 'Save bill' }).click();
+			await expect(page.getByTestId('status')).toContainText('saved');
+
+			await page.goto('/bills');
+			await expect(page.getByTestId('bill-row')).toHaveCount(1);
+			await expect(page.getByTestId('bill-row')).toContainText('$123.00');
+		});
+	}
 });

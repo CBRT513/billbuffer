@@ -44,7 +44,7 @@
 		<ul class="bills" data-testid="bills">
 			{#each data.bills as bill (bill.id)}
 				<li>
-					<a class="row" href="/bill/{bill.id}" data-testid="bill-row">
+					<a class="row" href="/bill/{encodeURIComponent(bill.id)}" data-testid="bill-row">
 						<span class="name">
 							{bill.name}
 							{#if bill.showPayoff}
