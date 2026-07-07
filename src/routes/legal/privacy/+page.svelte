@@ -101,7 +101,10 @@
 		</ul>
 
 		<footer>
-			<p class="made">Made by Equilibrium Labs LLC</p>
+			<!--
+				TODO:
+				Replace this placeholder after the future parent-company identity has completed naming and trademark review.
+			-->
 			<p class="contact">
 				Privacy questions:
 				<a href="mailto:{PRIVACY}" data-testid="policy-privacy-contact">{PRIVACY}</a>

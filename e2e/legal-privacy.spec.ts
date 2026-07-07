@@ -22,7 +22,8 @@ test.describe('Privacy Policy page (/legal/privacy)', () => {
 		await expect(s).toContainText('your responsibility'); // local data loss
 		await expect(s).toContainText('will change first'); // policy changes on new collection
 
-		await expect(page.getByTestId('policy')).toContainText('Made by Equilibrium Labs LLC');
+		// Standalone identity: no parent-company attribution appears on the page.
+		await expect(page.getByTestId('policy')).not.toContainText('Equilibrium');
 
 		await expect(page.getByTestId('policy-privacy-contact')).toHaveAttribute(
 			'href',

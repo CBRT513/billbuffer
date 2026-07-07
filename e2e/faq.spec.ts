@@ -35,7 +35,8 @@ test.describe('FAQ page (/faq)', () => {
 		await expect(list).toContainText('Import');
 		await expect(list).toContainText('Your paycheck'); // what to enter first
 
-		await expect(page.getByTestId('faq')).toContainText('Made by Equilibrium Labs LLC');
+		// Standalone identity: no parent-company attribution appears on the page.
+		await expect(page.getByTestId('faq')).not.toContainText('Equilibrium');
 
 		const feedback = page.getByTestId('faq-feedback');
 		await expect(feedback).toHaveText('feedback@billbuffer.app');

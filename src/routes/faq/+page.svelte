@@ -113,7 +113,10 @@
 		<p class="cta"><a href="/">Open BillBuffer</a></p>
 
 		<footer>
-			<p class="made">Made by Equilibrium Labs LLC</p>
+			<!--
+				TODO:
+				Replace this placeholder after the future parent-company identity has completed naming and trademark review.
+			-->
 			<p class="contact">
 				Contact: <a href="mailto:{FEEDBACK}" data-testid="faq-feedback-contact">{FEEDBACK}</a>
 			</p>
