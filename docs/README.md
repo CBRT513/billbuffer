@@ -31,6 +31,7 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 | **Product** | [`product/`](./product/) | Who it's for and what v1 is — privacy manifesto, MVP definition, personas, open questions. |
 | **Architecture** | [`architecture/`](./architecture/) | The non-negotiable technical rules — guardrails and stack. |
 | **Engineering** | [`engineering/`](./engineering/) | How to build it — implementation brief, calculation spec, test matrix, and the PR-vetting doctrine. |
+| **Plans** | [`plans/`](./plans/) | Proposed, not-yet-executed work — scoped plans with their own PR breakdowns. |
 | **History** | [`history/`](./history/) | Retired / superseded documents. Nothing is deleted. Empty today. |
 
 ## Full index
@@ -55,6 +56,9 @@ This directory holds all BillBuffer documentation, organized by tier. The repo
 - [`engineering/CALCULATION_ENGINE_SPEC.md`](./engineering/CALCULATION_ENGINE_SPEC.md)
 - [`engineering/TEST_MATRIX.md`](./engineering/TEST_MATRIX.md)
 - [`engineering/PR_VETTING_DOCTRINE.md`](./engineering/PR_VETTING_DOCTRINE.md)
+
+### Plans
+- [`plans/EQUILIBRIUM_LABS_INTEGRATION_PLAN.md`](./plans/EQUILIBRIUM_LABS_INTEGRATION_PLAN.md) — how to reference the parent company (planning only)
 
 ### History
 - [`history/`](./history/) — archive (see [`history/README.md`](./history/README.md))
