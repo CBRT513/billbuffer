@@ -121,6 +121,31 @@ test.describe('PWA offline smoke', () => {
 		await expect(page.getByTestId('policy')).toContainText('No accounts');
 	});
 
+	test('offline, /faq serves the real prerendered FAQ document (not the SPA shell)', async ({
+		page,
+		context
+	}) => {
+		await installAndControl(page);
+
+		await page.goto('/faq');
+		await expect(page.getByRole('heading', { name: 'Questions & answers' })).toBeVisible();
+
+		await context.setOffline(true);
+		const response = await page.reload();
+
+		expect(response, 'offline navigation returned a response').toBeTruthy();
+		expect(response!.ok()).toBe(true);
+
+		// The served bytes are the actual prerendered FAQ HTML, not the SPA shell.
+		const body = await response!.text();
+		expect(body).toContain('Questions &amp; answers');
+		expect(body).toContain('Made by Equilibrium Labs LLC');
+		expect(body).toContain('feedback@billbuffer.app');
+
+		await expect(page.getByRole('heading', { name: 'Questions & answers' })).toBeVisible();
+		await expect(page.getByTestId('faq-list')).toContainText('Do I have to connect my bank?');
+	});
+
 	test('the offline cache holds only the app shell and static assets', async ({ page }) => {
 		await installAndControl(page);
 
@@ -134,6 +159,7 @@ test.describe('PWA offline smoke', () => {
 			p === '/' ||
 			p === '/trust' || // prerendered public document — static HTML, never user data
 			p === '/legal/privacy' || // prerendered public policy — static HTML, never user data
+			p === '/faq' || // prerendered public FAQ — static HTML, never user data
 			p.startsWith('/_app/') ||
 			/\.(js|css|svg|png|ico|json|webmanifest|woff2?|txt|html)$/.test(p);
 		expect(paths.filter((p) => !looksStatic(p))).toEqual([]);
