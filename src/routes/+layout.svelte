@@ -7,9 +7,10 @@
 	// each page keeps its own single <h1>. Each page renders its own <main>.
 	let { children }: { children: Snippet } = $props();
 
-	// Public content pages (e.g. /trust) stand on their own — no app chrome — so a
-	// first-time visitor sees only the page, not the app's internal navigation.
-	const showAppChrome = $derived(!page.url.pathname.startsWith('/trust'));
+	// Public content pages (e.g. /trust, /legal/*) stand on their own — no app chrome —
+	// so a first-time visitor sees only the page, not the app's internal navigation.
+	const PUBLIC_PREFIXES = ['/trust', '/legal'];
+	const showAppChrome = $derived(!PUBLIC_PREFIXES.some((p) => page.url.pathname.startsWith(p)));
 </script>
 
 {#if showAppChrome}

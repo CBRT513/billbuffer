@@ -89,6 +89,9 @@
 			<p class="contact">
 				Contact: <a href="mailto:{FEEDBACK}" data-testid="trust-feedback">{FEEDBACK}</a>
 			</p>
+			<p class="contact">
+				<a href="/legal/privacy" data-testid="trust-privacy-link">Privacy Policy</a>
+			</p>
 		</footer>
 	</div>
 </main>
