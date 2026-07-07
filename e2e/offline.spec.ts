@@ -88,7 +88,6 @@ test.describe('PWA offline smoke', () => {
 		// replaced by the shell fallback.
 		const body = await response!.text();
 		expect(body).toContain('Why you can trust BillBuffer');
-		expect(body).toContain('Made by Equilibrium Labs LLC');
 		expect(body).toContain('feedback@billbuffer.app');
 
 		// And it renders offline (static HTML + cached CSS, no JavaScript).
@@ -114,7 +113,6 @@ test.describe('PWA offline smoke', () => {
 		// The served bytes are the actual prerendered policy HTML, not the SPA shell.
 		const body = await response!.text();
 		expect(body).toContain('Privacy Policy');
-		expect(body).toContain('Made by Equilibrium Labs LLC');
 		expect(body).toContain('privacy@billbuffer.app');
 
 		await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
@@ -139,7 +137,6 @@ test.describe('PWA offline smoke', () => {
 		// The served bytes are the actual prerendered FAQ HTML, not the SPA shell.
 		const body = await response!.text();
 		expect(body).toContain('Questions &amp; answers');
-		expect(body).toContain('Made by Equilibrium Labs LLC');
 		expect(body).toContain('feedback@billbuffer.app');
 
 		await expect(page.getByRole('heading', { name: 'Questions & answers' })).toBeVisible();

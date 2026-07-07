@@ -22,7 +22,8 @@ test.describe('Trust page', () => {
 		await expect(points).toContainText('Import');
 		await expect(points).toContainText('only information'); // email is all we receive
 
-		await expect(page.getByTestId('trust')).toContainText('Made by Equilibrium Labs LLC');
+		// Standalone identity: no parent-company attribution appears on the page.
+		await expect(page.getByTestId('trust')).not.toContainText('Equilibrium');
 
 		const contact = page.getByTestId('trust-feedback');
 		await expect(contact).toHaveText('feedback@billbuffer.app');
